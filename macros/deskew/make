@@ -1,0 +1,6 @@
+#
+#	must be run from nix-shell
+rm -rf runs
+librelane config.json
+cp ./runs/*/final/lef/deskew.lef .
+cp ./runs/*/final/gds/deskew.gds .

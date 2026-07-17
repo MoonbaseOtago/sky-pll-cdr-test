@@ -1,0 +1,62 @@
+{
+  "DESIGN_NAME": "cdrs",
+  "VERILOG_FILES": "cdrs.v",
+  "CLOCK_PORT": "CLKI",
+  "CLOCK_PERIOD": 3.33,
+  "PDK": "sky130A",
+  "STD_CELL_LIBRARY": "sky130_fd_sc_hd",
+  "FP_SIZING": "absolute",
+  "DIE_AREA": "0 0 77 60",
+  "CELL_PAD": 1 ,
+  "PL_TARGET_DENSITY_PCT": 70,
+  "PNR_SDC_FILE": "cdrs.sdc",
+  "SYNTH_AUTONAME": 1,
+"//": "Macro",
+  "// MACROS": {
+    "cdr_cp_vco": {
+      "instances": {
+        "cp_vco": {
+          "location": [0.1, 1],
+          "orientation": "S"
+        }
+      },
+      "gds": ["cdr_cp_vco.gds"],
+      "lef": ["cdr_cp_vco.lef"],
+      "lib": {
+        	"*": ["cdr_cp_vco.lib"]
+      	     }
+    }
+  },
+  "IGNORE_DISCONNECTED_MODULES": ["cdrs"],
+  "FP_DEF_TEMPLATE": "block.def",
+  "meta": {
+    "flow": "Classic",
+    "substituting_steps": {
+      "OpenROAD.GeneratePDN": null,
+      "OpenROAD.IRDropReport": null,
+      "KLayout.StreamOut": null,
+      "KLayout.Render": null
+    }
+  },
+  "TOP_MARGIN_MULT": 1,
+  "BOTTOM_MARGIN_MULT": 1,
+  "LEFT_MARGIN_MULT": 1,
+  "RIGHT_MARGIN_MULT": 1,
+  "FP_MACRO_HORIZONTAL_HALO": "1",
+  "FP_MACRO_VERTICAL_HALO": "1",
+  "PDN_HORIZONTAL_HALO": "1",
+  "PDN_VERTICAL_HALO": "1",
+
+
+  "RUN_KLAYOUT_XOR": 0,
+  "RUN_KLAYOUT_DRC": 0,
+  "DESIGN_REPAIR_BUFFER_OUTPUT_PORTS": 0,
+  "RUN_CTS": 1,
+  "FP_PDN_MULTILAYER": 0,
+  "MAGIC_DEF_LABELS": 0,
+  "MAGIC_WRITE_LEF_PINONLY": 1,
+  "VDD_PIN": "VPWR",
+  "GND_PIN": "VGND",
+  "RT_MAX_LAYER": "met3"
+
+}
