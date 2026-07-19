@@ -9,7 +9,7 @@
 
 `default_nettype none
 
-module tt_um_speed_bus (
+module tt_um_quick_bus (
     input  wire [7:0] ui_in,    // Dedicated inputs
     output wire [7:0] uo_out,   // Dedicated outputs
     input  wire [7:0] uio_in,   // IOs: Input path
@@ -48,9 +48,9 @@ module tt_um_speed_bus (
 	//
 	//	test modes:
 	//		0 - just PLL
-	//		1 - speed_bus 100MHz
-	//		2 - speed_bus 100-200MHz
-	//		3 - speed_bus 100-300MHz
+	//		1 - quick_bus 100MHz
+	//		2 - quick_bus 100-200MHz
+	//		3 - quick_bus 100-300MHz
 	//
 	reg	[1:0]r_test;
 	reg [3:0]r_pll_count;

@@ -29,7 +29,7 @@ module tb ();
 
 
   // Replace tt_um_example with your module name:
-  tt_um_speed_bus user_project (
+  tt_um_quick_bus user_project (
 `ifdef GL_TEST
       .VPWR(VPWR),
       .VGND(VGND),

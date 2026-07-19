@@ -6,7 +6,7 @@ SIM ?= icarus
 FST ?= -fst # Use more efficient FST format
 TOPLEVEL_LANG ?= verilog
 SRC_DIR = $(PWD)/../src
-PROJECT_SOURCES = speedbus_test.v upstream.sv downstream.sv lfsr8b10b.sv up_des8b10.sv up_ser8b10.sv down_des8b10.sv down_ser8b10.sv mgmt.sv  ../test/cdr_cp_vco.bb.v  ../test/cdrs.bb.v  ../test/deskew.bb.v  ../test/pll2.bb.v 
+PROJECT_SOURCES = quickbus_test.v upstream.sv downstream.sv lfsr8b10b.sv up_des8b10.sv up_ser8b10.sv down_des8b10.sv down_ser8b10.sv mgmt.sv  ../test/cdr_cp_vco.bb.v  ../test/cdrs.bb.v  ../test/deskew.bb.v  ../test/pll2.bb.v 
 
 
 COMPILE_ARGS    += -DSYS_TEST
