@@ -127,7 +127,7 @@ module mgmt(input reset_n,
 	reg		 r_xmt_ready, c_xmt_ready;
 	assign		xmt_ready = r_xmt_ready;
 
-	reg [3:0]r_state, c_state;
+	reg [1:0]r_state, c_state;
 	reg [4:0]r_rcount, c_rcount;
 	reg [4:0]r_xcount, c_xcount;
 	reg [2:0]r_xphase, c_xphase;
@@ -192,10 +192,10 @@ module mgmt(input reset_n,
 
 	/* verilator lint_off CASEOVERLAP */
 	always @(posedge clk10) begin
-		casez ({choose_prog, next_prog, reset_prog}) // synthesis full_case parallel_case
-		3'b1??:	r_xmt_prog <= average_prog[4:1];
-		3'b?1?:	r_xmt_prog <= r_xmt_prog+1;
-		3'b??1:	r_xmt_prog <= 1;
+		case ({choose_prog, next_prog, reset_prog}) // synthesis full_case parallel_case
+		3'b100:	r_xmt_prog <= average_prog[4:1];
+		3'b010:	r_xmt_prog <= r_xmt_prog+1;
+		3'b001:	r_xmt_prog <= 1;
 		3'b000:;
 		default: r_xmt_prog <= 4'bx;
 		endcase
@@ -297,7 +297,6 @@ module mgmt(input reset_n,
 		c_restart = r_restart;
 		c_upstream_speed = r_upstream_speed;
 		case (r_state)	// synthesis full_case
-	
 		0:	begin
 				if (rcv_ready && rcv_k && rcv_out == 8'hbc) begin // COM?
 					c_state = 1;

@@ -98,6 +98,12 @@ module tt_um_speed_bus (
 			ruio_oe = 8'b0001_1110;
 			ruio_out = {tmp, 2'b0,  clk_up, clk_down, down_rcv_ready, down_rcv_k, 1'b0};
 		end
+	default:
+		begin
+			ruo_out = 8'bx;
+			ruio_oe = 8'bx;
+			ruio_out = 8'bx;
+		end
 	endcase
 
 	reg r_up_last, r_up_xmt_ready;
