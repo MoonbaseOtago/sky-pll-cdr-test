@@ -50,10 +50,10 @@
           "orientation": "N"
         }
       },
-      "gds": ["macros/pll/pll2.gds"],
-      "lef": ["macros/pll/pll2.lef"],
+      "gds": ["dir::../macros/pll/pll2.gds"],
+      "lef": ["dir::../macros/pll/pll2.lef"],
       "lib": {
-        "*": ["macros/pll/pll2.lib"]
+        "*": ["dir::../macros/pll/pll2.lib"]
       }
     },
     "deskew": {
@@ -63,10 +63,10 @@
           "orientation": "N"
         }
       },
-      "gds": ["macros/deskew/deskew.gds"],
-      "lef": ["macros/deskew/deskew.lef"],
+      "gds": ["dir::../macros/deskew/deskew.gds"],
+      "lef": ["dir::../macros/deskew/deskew.lef"],
       "lib": {
-        "*": ["macros/deskew/deskew.lib"]
+        "*": ["dir::../macros/deskew/deskew.lib"]
       }
     },
     "cdr_cp_vco": {
@@ -76,10 +76,10 @@
           "orientation": "FS"
         }
       },
-      "gds": ["macros/cdr/cdr_cp_vco.gds"],
-      "lef": ["macros/cdr/cdr_cp_vco.lef"],
+      "gds": ["dir::../macros/cdr/cdr_cp_vco.gds"],
+      "lef": ["dir::../macros/cdr/cdr_cp_vco.lef"],
       "lib": {
-        "*": ["macros/cdr/cdr_cp_vco.lib"]
+        "*": ["dir::../macros/cdr/cdr_cp_vco.lib"]
       }
     },
     "cdrs": {
@@ -89,10 +89,10 @@
           "orientation": "N"
         }
       },
-      "gds": ["macros/cdrsup/cdrs.gds"],
-      "lef": ["macros/cdrsup/cdrs.lef"],
+      "gds": ["dir::../macros/cdrsup/cdrs.gds"],
+      "lef": ["dir::../macros/cdrsup/cdrs.lef"],
       "lib": {
-        "*": ["macros/cdrsup/cdrs.lib"]
+        "*": ["dir::../macros/cdrsup/cdrs.lib"]
       }
     }
   },
