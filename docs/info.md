@@ -36,7 +36,7 @@ at the desired frequency (COUNT\+1)\*f(REFCLK) (it's your responsibility to choo
 actually generate - roughly 50-300MHz, outside that range the results are undefined). Note in the rush to tape out the VCO range may have shifted up, 50MHa may not lock well - we'll see, that's what test tapeouts are for.
 * RESET\_OUT\_N - this is a synchronous signal (wrt CLK) that is asserted by RESET\_N until the clock is fairly stable - it's intended use is to hold a design in reset until the clock is stable, through the period when it might be thrashing around as the VCO starts up - your design should ignore the Tiny Tapeout rst\_n and use this signal - note this signal is generated internally, your design might have a deep clock tree, it may be useful to run this through a flop before you use it to meet setup/hold. This signal is asserted by RESET\_N and cleared when the clock becomes stable enough to use, it is not asserted again until RESET\_N is asserted. This signal is cleared BEFORE the clock is completely stable (we'll characterize this with spice later), clock freq may go slightly higher that desired (a few percent) as it settles.
 
-With the reference clock set to 25MHz these frequencies shoukld be possible, anything after ~300MHz may not be real (out of the range of the VCO)
+With the reference clock set to 25MHz these frequencies should be possible, anything after ~300MHz may not be real (out of the range of the VCO)
 | COUNT    |  multiplier  | CLK Freq |
 | -------- |  -------     | --------
 | 0001     | 2            | 50MHz    |
@@ -55,7 +55,7 @@ With the reference clock set to 25MHz these frequencies shoukld be possible, any
 | 1110     | 15           | 375MHz*  |
 
 
-With a divides by 2 reference clock set to 12.5MHz these frequencies shoukld be possible, number under 50MHz may be out of the range of the VCO)
+With a divides by 2 reference clock set to 12.5MHz these frequencies should be possible, number under 50MHz may be out of the range of the VCO)
 | COUNT    |  multiplier  | CLK Freq |
 | -------- |  -------     | --------
 | 0001     | 2            | 25MHz*    |
@@ -85,10 +85,10 @@ compare it with SPI Upstream is 'M' and Downstream is 'S'. Upstream is in charge
 
 Upstream has a PLL it sets the frequency for both sides, data is sent at all times even when idle, 
 on the Downstream side is a Clock Data Recovery unit (essentially a PLL locked to the incoming data stream)
-downstream runs on the recovered clock (essentially the PLL's clock with some jitter and an arbitray delay).
+downstream runs on the recovered clock (essentially the PLL's clock with some jitter and an arbitrary delay).
 
-Data is sent/received using the standard 8b10 NRZ encoding - this sends 8 bits of data and a handfull of
-framing symbols in 10 bits of on-wire data sith a guaranteed number of edges to keep the CDR running. 
+Data is sent/received using the standard 8b10 NRZ encoding - this sends 8 bits of data and a handful of
+framing symbols in 10 bits of on-wire data with a guaranteed number of edges to keep the CDR running. 
 8B10 has some minor error detection facilities, these are reported to the next layer up.
 
 Data sent from Downstream to Upstream is sent with the Recovered Clock and received with the PLL clock,
@@ -109,7 +109,7 @@ Sitting above the bit framer and clock management is a management unit:
 
 ![QuickBus](diag3.png)
 
-The management unit handles link startup, frequency negotgiation, bus driver optimisation and reversing
+The management unit handles link startup, frequency negotiation, bus driver optimization and reversing
 miswired buses.  It also handles error recovery, and (eventually) hot staging. When not in use it steps
 out of the way of the next level protocols.
 
@@ -126,8 +126,8 @@ Outgoing (outputs):
 Incoming (inputs):
 * RCV\_D[7:0] - ingoing data
 * RCV\_K      - ingoing symbol
-* RCV\_READY - data is ready when this is asserted there is no flow control so you must do something wigth the data or drop it
-* RCV\_ALIGN - this is set when EIE/END/EDB symbols are received or an error is detected - it is optional and is intended for systems where a fifo is used where the read port is multiple bygtes wide
+* RCV\_READY - data is ready when this is asserted there is no flow control so you must do something with the data or drop it
+* RCV\_ALIGN - this is set when EIE/END/EDB symbols are received or an error is detected - it is optional and is intended for systems where a fifo is used where the read port is multiple bytes wide
 
 TBD - an upper level protocol for register/memory access (similar to existing SPI systems).
 
@@ -151,7 +151,7 @@ The output CLK is connected to uo\_out\[0\] a 4 bit counter driven from CLK is c
 
 ## How to test
 
-Drive ui\_in with 8'n0000\_0001 (2 times freq), Set the TT clock to 25MHz. Assert reset, uo\_out\[1\] should go low, clear reset, uo\_out\[1\] should high. If we get this far the PLL is making a good clock. You can now look at the uo\_out pins on a scope to check the freqs (should be 50MHz though that's at the tough lower end of the final VCO, 8'n0000\_0010 will give you 75MHz, try looking at uo\_out\[3:2\]which shoukld be 1/2 and 1/4 the internal clock freq)
+Drive ui\_in with 8'n0000\_0001 (2 times freq), Set the TT clock to 25MHz. Assert reset, uo\_out\[1\] should go low, clear reset, uo\_out\[1\] should high. If we get this far the PLL is making a good clock. You can now look at the uo\_out pins on a scope to check the freqs (should be 50MHz though that's at the tough lower end of the final VCO, 8'n0000\_0010 will give you 75MHz, try looking at uo\_out\[3:2\]which should be 1/2 and 1/4 the internal clock freq)
 
 
 
