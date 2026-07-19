@@ -12,6 +12,8 @@ module upstream(input reset_n, input refclk,
 `endif
 			input [3:0]pll_count,
 			input      pll_test,
+			output	   pll_clk,
+			input [6:0]default_speed,
 
 			input din, output dout,
 
@@ -25,38 +27,45 @@ module upstream(input reset_n, input refclk,
 
 			input  [7:0]xmt_in,
 			input       xmt_k,
-			input       xmt_ready
+			input       xmt_ready,
+
+			output	    mgmt_ok
 			);
 
     wire RESET_PLL_OUT_N;
     wire CLK;
+	/* verilator lint_off UNUSEDSIGNAL */
 	wire COUNT_OUT, LOCKABLE;
+	/* verilator lint_on UNUSEDSIGNAL */
+	reg [3:0]pll_clk_speed;
+	assign pll_clk = CLK;
 
-	pll2 pll(.RESET_N(reset_n),
+	pll2 pll2(.RESET_N(reset_n),
 `ifdef GL_TEST
             .VPWR(VPWR), .VGND(VGND),
 `endif
 
         .RESET_OUT_N(RESET_PLL_OUT_N), .REFCLK(refclk),
-		.COUNT_3(pll_count[3]), .COUNT_2(pll_count[2]), .COUNT_1(pll_count[1]), .COUNT_0(pll_count[0]),
+		.COUNT_3(pll_clk_speed[3]), .COUNT_2(pll_clk_speed[2]), .COUNT_1(pll_clk_speed[1]), .COUNT_0(pll_clk_speed[0]),
 		.COUNT_OUT(COUNT_OUT),
 		.LOCKABLE(LOCKABLE),
 		.CLK(CLK));
 
     wire [9:0]DI, DO;
     wire SYNCING;
+	/* verilator lint_off UNUSEDSIGNAL */
     wire SYNCED;
+	/* verilator lint_on UNUSEDSIGNAL */
     wire RESTART;
     wire REV;
 	wire XMT_READY, XMT_RD;
-	wire mgmt_ok;
 	wire mgmt_k, mgmt_ready;
 	wire [7:0]mgmt_in;
 	wire local_rcv_ready;
-	assign rcv_ready = local_rcv_ready&mgmt_ready;
+	assign rcv_ready = local_rcv_ready&mgmt_ok;
 	
 
-    deskew deskew(.RESET_N(RESET_PLL_OUT_N), .RESTART(FRESTART), .DIN(din), .DOUT(dout), .REV(REV), .CLK(CLK),
+    deskew deskew(.RESET_N(RESET_PLL_OUT_N), .RESTART(RESTART), .DIN(din), .DOUT(dout), .REV(REV), .CLK(CLK),
 
                     .RESET_OUT_N(reset_out_n),
                     .CLK10(clk10),
@@ -69,43 +78,52 @@ module upstream(input reset_n, input refclk,
                     .XMT_RD(XMT_RD));
 
     wire      scramble = 1;
-    up_des8b10  des(.CLK10(CLK10), .RESET_OUT_N(reset_out_n), .DI(DI), .SYNCING(SYNCING),
+    up_des8b10  des(.CLK10(clk10), .RESET_OUT_N(reset_out_n), .DI(DI), .SYNCING(SYNCING),
                     .scramble(scramble),
                     .kout(rcv_k),
                     .out(rcv_out),
                     .ready(local_rcv_ready),
                     .align(rcv_align));
 
-    up_ser8b10  ser(.CLK10(CLK10), .RESET_OUT_N(reset_out_n),
+    up_ser8b10  ser(.CLK10(clk10), .RESET_OUT_N(reset_out_n),
                     .DO(DO),
                     .XMT_READY(XMT_READY),
                     .XMT_RD(XMT_RD),
 
                     .scramble(scramble),
-                    .k(mgmt_ready?xmt_k:mgmt_k),
-                    .in(mgmt_ready?xmt_in:mgmt_in),
-                    .ready(mgmt_ready?xmt_ready:mgmt_ready));
+                    .k(mgmt_ok?xmt_k:mgmt_k),
+                    .in(mgmt_ok?xmt_in:mgmt_in),
+                    .ready(mgmt_ok?xmt_ready:mgmt_ready));
 
 
 	//
 	//	link management
 	//
+	/* verilator lint_off CASEOVERLAP */
 	wire [6:0]speed;
-	reg [3:0]pll_clk;
 	always @(*)
-	case (speed) // synthesis full_case parallel_case
-	7'b???_???1:	pll_clk = 1;	// 50MHzx
-	7'b???_??1?:	pll_clk = 3;	// 100MHz
-	7'b???_?1??:	pll_clk = 5;	// 150MHz
-	7'b???_1???:	pll_clk = 7;	// 200MHz
-	7'b??1_????:	pll_clk = 11;	// 200MHz
+	if (pll_test) begin
+		pll_clk_speed = pll_count;
+	end else
+	casez (speed) // synthesis full_case parallel_case
+	7'b???_???1:	pll_clk_speed = 1;	// 50MHzx
+	7'b???_??1?:	pll_clk_speed = 3;	// 100MHz
+	7'b???_?1??:	pll_clk_speed = 5;	// 150MHz
+	7'b???_1???:	pll_clk_speed = 7;	// 200MHz
+	7'b??1_????:	pll_clk_speed = 11;	// 200MHz
+	default:		pll_clk_speed = 4'bx;
 	endcase
+	/* verilator lint_on CASEOVERLAP */
 	
+	/* verilator lint_off UNUSEDSIGNAL */
 	wire [7:0]output_prog;	// output drivers programming (unused here)
+	/* verilator lint_on UNUSEDSIGNAL */
 	mgmt #(.UPSTREAM(1))mgmt(
 				.reset_n(reset_n),
-				.clk10(CLK10), .RESET_OUT_N(reset_out_n),
+				.clk10(clk10), .reset_out_n(reset_out_n),
 				.speed(speed),
+				.xmt_prog(output_prog),
+				.default_speed(default_speed),
 				.rcv_out(rcv_out),
 				.rcv_k(rcv_k),
 				.rcv_ready(local_rcv_ready),

@@ -1,0 +1,467 @@
+library (cdrs) {
+  delay_model : "table_lookup";
+  library_features : "report_delay_calculation";
+  voltage_unit : "1V";
+  current_unit : "1mA";
+  resistance_unit : "1ohm";
+  capacitive_load_unit (1,fF);
+  input_threshold_pct_rise : 50;
+  input_threshold_pct_fall : 50;
+  output_threshold_pct_rise : 50;
+  output_threshold_pct_fall : 50;
+  slew_lower_threshold_pct_rise : 10;
+  slew_lower_threshold_pct_fall : 10;
+  slew_upper_threshold_pct_rise : 90;
+  slew_upper_threshold_pct_fall : 90;
+  slew_derate_from_library : 1.0;
+  default_cell_leakage_power : 0.0;
+  default_leakage_power_density : 0.0;
+  default_input_pin_cap : 1.0;
+  default_inout_pin_cap : 1.0;
+  default_output_pin_cap : 0.5;
+  default_max_transition : 0.5;
+  default_fanout_load : 1.0;
+  default_max_fanout : 4.0;
+  default_connection_class : "universal";
+  nom_process : 1.0;
+  nom_temperature : 25.0;
+  nom_voltage : 1.8;
+  cell (pll) {
+    dont_touch : true;
+    dont_use : true;
+    map_only : true;
+    interface_timing : true;
+    mode_definition (TIMING_MODE) {
+      mode_value (MODE_SLOW) {
+        
+      }
+      mode_value (MODE_FAST) {
+        
+      }
+    }
+    pg_pin (VPWR) {
+      voltage_name : "VPWR";
+      pg_type : "primary_power";
+    }
+    pg_pin (VGND) {
+      voltage_name : "VGND";
+      pg_type : "primary_ground";
+    }
+    pin (CLKI) {
+      direction : "input";
+      capacitance : 5.0;
+    }
+    pin (CLKI_N) {
+      direction : "input";
+      capacitance : 5.0;
+    }
+    pin (CLKQ) {
+      direction : "input";
+      capacitance : 5.0;
+    }
+    pin (CLKQ_N) {
+      direction : "input";
+      capacitance : 5.0;
+    }
+    pin (RESTART) {
+      direction : "input";
+      capacitance : 5.0;
+    }
+    pin (RESET_N) {
+      direction : "input";
+      capacitance : 5.0;
+    }
+    pin (DIN) {
+      direction : "input";
+      capacitance : 5.0;
+    }
+    pin (REV) {
+      direction : "input";
+      capacitance : 5.0;
+    }
+    pin (XMT_READY) {
+      direction : "input";
+      capacitance : 5.0;
+    }
+    pin (XMT_RD) {
+      direction : "input";
+      capacitance : 5.0;
+    }
+    pin (DO[9:0]) {
+      direction : "input";
+      capacitance : 5.0;
+    }
+
+
+    pin (RESET) {
+      direction : "output";
+      power_down_function : "(!VPWR + VGND)";
+      related_ground_pin : "VGND";
+      related_power_pin : "VPWR";
+      max_capacitance : 20;
+      timing () {
+        timing_type : "combinational";
+        timing_sense : "non_unate";
+        mode (TIMING_MODE, MODE_SLOW);
+        cell_rise (scalar) {
+          values ("17.5");
+        }
+        cell_fall (scalar) {
+          values ("17.5");
+        }
+        rise_transition (scalar) {
+          values ("0.5");
+        }
+        fall_transition (scalar) {
+          values ("0.5");
+        }
+      }
+      timing () {
+        timing_type : "combinational";
+        timing_sense : "non_unate";
+        mode (TIMING_MODE, MODE_FAST);
+        cell_rise (scalar) {
+          values ("0.5");
+        }
+        cell_fall (scalar) {
+          values ("0.5");
+        }
+        rise_transition (scalar) {
+          values ("0.1");
+        }
+        fall_transition (scalar) {
+          values ("0.1");
+        }
+      }
+    }
+    pin (UP_N) {
+      direction : "output";
+      power_down_function : "(!VPWR + VGND)";
+      related_ground_pin : "VGND";
+      related_power_pin : "VPWR";
+      max_capacitance : 20;
+      timing () {
+        timing_type : "combinational";
+        timing_sense : "non_unate";
+        mode (TIMING_MODE, MODE_SLOW);
+        cell_rise (scalar) {
+          values ("17.5");
+        }
+        cell_fall (scalar) {
+          values ("17.5");
+        }
+        rise_transition (scalar) {
+          values ("0.5");
+        }
+        fall_transition (scalar) {
+          values ("0.5");
+        }
+      }
+      timing () {
+        timing_type : "combinational";
+        timing_sense : "non_unate";
+        mode (TIMING_MODE, MODE_FAST);
+        cell_rise (scalar) {
+          values ("0.5");
+        }
+        cell_fall (scalar) {
+          values ("0.5");
+        }
+        rise_transition (scalar) {
+          values ("0.1");
+        }
+        fall_transition (scalar) {
+          values ("0.1");
+        }
+      }
+    }
+    pin (DOWN_N) {
+      direction : "output";
+      power_down_function : "(!VPWR + VGND)";
+      related_ground_pin : "VGND";
+      related_power_pin : "VPWR";
+      max_capacitance : 20;
+      timing () {
+        timing_type : "combinational";
+        timing_sense : "non_unate";
+        mode (TIMING_MODE, MODE_SLOW);
+        cell_rise (scalar) {
+          values ("17.5");
+        }
+        cell_fall (scalar) {
+          values ("17.5");
+        }
+        rise_transition (scalar) {
+          values ("0.5");
+        }
+        fall_transition (scalar) {
+          values ("0.5");
+        }
+      }
+      timing () {
+        timing_type : "combinational";
+        timing_sense : "non_unate";
+        mode (TIMING_MODE, MODE_FAST);
+        cell_rise (scalar) {
+          values ("0.5");
+        }
+        cell_fall (scalar) {
+          values ("0.5");
+        }
+        rise_transition (scalar) {
+          values ("0.1");
+        }
+        fall_transition (scalar) {
+          values ("0.1");
+        }
+      }
+    }
+    pin (SYNCED) {
+      direction : "output";
+      power_down_function : "(!VPWR + VGND)";
+      related_ground_pin : "VGND";
+      related_power_pin : "VPWR";
+      max_capacitance : 20;
+      timing () {
+        timing_type : "combinational";
+        timing_sense : "non_unate";
+        mode (TIMING_MODE, MODE_SLOW);
+        cell_rise (scalar) {
+          values ("17.5");
+        }
+        cell_fall (scalar) {
+          values ("17.5");
+        }
+        rise_transition (scalar) {
+          values ("0.5");
+        }
+        fall_transition (scalar) {
+          values ("0.5");
+        }
+      }
+      timing () {
+        timing_type : "combinational";
+        timing_sense : "non_unate";
+        mode (TIMING_MODE, MODE_FAST);
+        cell_rise (scalar) {
+          values ("0.5");
+        }
+        cell_fall (scalar) {
+          values ("0.5");
+        }
+        rise_transition (scalar) {
+          values ("0.1");
+        }
+        fall_transition (scalar) {
+          values ("0.1");
+        }
+      }
+    }
+    pin (SYNCING) {
+      direction : "output";
+      power_down_function : "(!VPWR + VGND)";
+      related_ground_pin : "VGND";
+      related_power_pin : "VPWR";
+      max_capacitance : 20;
+      timing () {
+        timing_type : "combinational";
+        timing_sense : "non_unate";
+        mode (TIMING_MODE, MODE_SLOW);
+        cell_rise (scalar) {
+          values ("17.5");
+        }
+        cell_fall (scalar) {
+          values ("17.5");
+        }
+        rise_transition (scalar) {
+          values ("0.5");
+        }
+        fall_transition (scalar) {
+          values ("0.5");
+        }
+      }
+      timing () {
+        timing_type : "combinational";
+        timing_sense : "non_unate";
+        mode (TIMING_MODE, MODE_FAST);
+        cell_rise (scalar) {
+          values ("0.5");
+        }
+        cell_fall (scalar) {
+          values ("0.5");
+        }
+        rise_transition (scalar) {
+          values ("0.1");
+        }
+        fall_transition (scalar) {
+          values ("0.1");
+        }
+      }
+    }
+    pin (RESET_OUT_N) {
+      direction : "output";
+      power_down_function : "(!VPWR + VGND)";
+      related_ground_pin : "VGND";
+      related_power_pin : "VPWR";
+      max_capacitance : 20;
+      timing () {
+        timing_type : "combinational";
+        timing_sense : "non_unate";
+        mode (TIMING_MODE, MODE_SLOW);
+        cell_rise (scalar) {
+          values ("17.5");
+        }
+        cell_fall (scalar) {
+          values ("17.5");
+        }
+        rise_transition (scalar) {
+          values ("0.5");
+        }
+        fall_transition (scalar) {
+          values ("0.5");
+        }
+      }
+      timing () {
+        timing_type : "combinational";
+        timing_sense : "non_unate";
+        mode (TIMING_MODE, MODE_FAST);
+        cell_rise (scalar) {
+          values ("0.5");
+        }
+        cell_fall (scalar) {
+          values ("0.5");
+        }
+        rise_transition (scalar) {
+          values ("0.1");
+        }
+        fall_transition (scalar) {
+          values ("0.1");
+        }
+      }
+    }
+    pin (DOUT) {
+      direction : "output";
+      power_down_function : "(!VPWR + VGND)";
+      related_ground_pin : "VGND";
+      related_power_pin : "VPWR";
+      max_capacitance : 20;
+      timing () {
+        timing_type : "combinational";
+        timing_sense : "non_unate";
+        mode (TIMING_MODE, MODE_SLOW);
+        cell_rise (scalar) {
+          values ("17.5");
+        }
+        cell_fall (scalar) {
+          values ("17.5");
+        }
+        rise_transition (scalar) {
+          values ("0.5");
+        }
+        fall_transition (scalar) {
+          values ("0.5");
+        }
+      }
+      timing () {
+        timing_type : "combinational";
+        timing_sense : "non_unate";
+        mode (TIMING_MODE, MODE_FAST);
+        cell_rise (scalar) {
+          values ("0.5");
+        }
+        cell_fall (scalar) {
+          values ("0.5");
+        }
+        rise_transition (scalar) {
+          values ("0.1");
+        }
+        fall_transition (scalar) {
+          values ("0.1");
+        }
+      }
+    }
+    pin (CLK10) {
+      direction : "output";
+      power_down_function : "(!VPWR + VGND)";
+      related_ground_pin : "VGND";
+      related_power_pin : "VPWR";
+      max_capacitance : 20;
+      timing () {
+        timing_type : "combinational";
+        timing_sense : "non_unate";
+        mode (TIMING_MODE, MODE_SLOW);
+        cell_rise (scalar) {
+          values ("17.5");
+        }
+        cell_fall (scalar) {
+          values ("17.5");
+        }
+        rise_transition (scalar) {
+          values ("0.5");
+        }
+        fall_transition (scalar) {
+          values ("0.5");
+        }
+      }
+      timing () {
+        timing_type : "combinational";
+        timing_sense : "non_unate";
+        mode (TIMING_MODE, MODE_FAST);
+        cell_rise (scalar) {
+          values ("0.5");
+        }
+        cell_fall (scalar) {
+          values ("0.5");
+        }
+        rise_transition (scalar) {
+          values ("0.1");
+        }
+        fall_transition (scalar) {
+          values ("0.1");
+        }
+      }
+    }
+    pin (DI[9:0]) {
+      direction : "output";
+      power_down_function : "(!VPWR + VGND)";
+      related_ground_pin : "VGND";
+      related_power_pin : "VPWR";
+      max_capacitance : 20;
+      timing () {
+        timing_type : "combinational";
+        timing_sense : "non_unate";
+        mode (TIMING_MODE, MODE_SLOW);
+        cell_rise (scalar) {
+          values ("17.5");
+        }
+        cell_fall (scalar) {
+          values ("17.5");
+        }
+        rise_transition (scalar) {
+          values ("0.5");
+        }
+        fall_transition (scalar) {
+          values ("0.5");
+        }
+      }
+      timing () {
+        timing_type : "combinational";
+        timing_sense : "non_unate";
+        mode (TIMING_MODE, MODE_FAST);
+        cell_rise (scalar) {
+          values ("0.5");
+        }
+        cell_fall (scalar) {
+          values ("0.5");
+        }
+        rise_transition (scalar) {
+          values ("0.1");
+        }
+        fall_transition (scalar) {
+          values ("0.1");
+        }
+      }
+    }
+
+  }
+}

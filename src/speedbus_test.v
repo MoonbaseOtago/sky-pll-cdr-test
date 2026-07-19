@@ -20,41 +20,132 @@ module tt_um_speed_bus (
     input  wire       rst_n     // reset_n - low to reset
 );
 
-  	// All output pins must be assigned. If not used, assign to 0.
-	assign uo_out  = ui_in + uio_in;  // Example: ou_out is the sum of ui_in and uio_in
-	assign uio_out = 0;
-	assign uio_oe  = 0;
 
-	// List all unused inputs to prevent warnings
-	wire _unused = &{ena, clk, rst_n, 1'b0};
+	wire	  up_mgmt_ok, down_mgmt_ok;
+	wire	  clk_up, clk_down;
 
-	wire [2:0]mode = uio_in[7:5];
-
-
-	wire [3:0]pll_count=7;
-	wire	  pll_test=1;
-
-	wire	  d_up_to_down;		// the 'LVS' up/down connection
-	wire	  d_down_to_up;
+	wire [7:0]down_rcv_out;
+	wire	  down_rcv_k;
+    wire      down_rcv_ready;
+	/* verilator lint_off UNUSEDSIGNAL */
+    wire	  down_rcv_align;
+    wire	  up_rcv_align;
+	/* verilator lint_on UNUSEDSIGNAL */
+	wire	  down_reset_n;
 
 	wire [7:0]up_rcv_out;
 	wire	  up_rcv_k;
     wire      up_rcv_ready;
-    wire	  up_rcv_align;
-
-	wire [7:0]up_xmt_in=0;
-	wire	  up_xmt_k=0;
-    wire      up_xmt_ready=0;
-
 	wire	  up_reset_n;
-	wire	  clk_up;
 
-	upstream up(.reset_n(rst_n), .refclk(clk),
+	reg		  r_force_rev;
+
+
+	wire tmp = (|uio_in[4:1]) | ena;	// to keep lint happy
+
+
+
+	//
+	//	test modes:
+	//		0 - just PLL
+	//		1 - speed_bus 100MHz
+	//		2 - speed_bus 100-200MHz
+	//		3 - speed_bus 100-300MHz
+	//
+	reg	[1:0]r_test;
+	reg [3:0]r_pll_count;
+	always @(posedge clk)
+	if (!rst_n) begin
+		r_test <= ui_in[7:6];
+		r_force_rev <= ui_in[4];
+		r_pll_count <= ui_in[3:0];
+	end
+
+	reg [6:0]default_speed;
+	always @(*)
+	case (r_test)
+	0, 1:	default_speed = 7'b000_0010;
+	2:		default_speed = 7'b000_1010;
+	3:		default_speed = 7'b001_1010;
+	endcase
+		
+
+	wire [1:0]mode = uio_in[7:6];
+
+	wire	 pll_clk;
+	reg [3:0]r_pll_counter;
+
+	reg[7:0]ruo_out;
+	assign uo_out = ruo_out;
+	reg[7:0]ruio_out;
+	assign uio_out = ruio_out;
+	reg[7:0]ruio_oe;
+	assign uio_oe = ruio_oe;
+	always @(*)
+	case (mode)	// synthesis full_case parallel_case
+	0:	begin		// mostly PLL test
+			ruo_out = {pll_clk, clk_up, clk_down, 1'b0, r_pll_counter};
+			ruio_oe = 8'b0001_1111;
+			ruio_out = {tmp, 3'b0,  down_mgmt_ok, up_mgmt_ok, down_reset_n, up_reset_n};
+		end
+	1:	begin
+			ruo_out = up_rcv_out;
+			ruio_oe = 8'b0001_1110;
+			ruio_out = {tmp, 2'b0,  clk_up, clk_down, up_rcv_ready, up_rcv_k, 1'b0};
+		end
+	2:	begin
+			ruo_out = down_rcv_out;
+			ruio_oe = 8'b0001_1110;
+			ruio_out = {tmp, 2'b0,  clk_up, clk_down, down_rcv_ready, down_rcv_k, 1'b0};
+		end
+	endcase
+
+	reg r_up_last, r_up_xmt_ready;
+	reg r_down_last, r_down_xmt_ready;
+	always @(posedge clk_up) 
+	if (!rst_n) begin
+		r_up_last <= 0;
+		r_up_xmt_ready <= 0;
+	end else 
+	if (mode == 2 && r_up_last != uio_in[5]) begin
+		r_up_xmt_ready <= 1;
+		r_up_last <= uio_in[5];
+	end else begin
+		r_up_xmt_ready <= 0;
+	end
+	
+	always @(posedge clk_down) 
+	if (!rst_n) begin
+		r_down_last <= 0;
+		r_down_xmt_ready <= 0;
+	end else 
+	if (mode == 1 && r_down_last != uio_in[5]) begin
+		r_down_xmt_ready <= 1;
+		r_down_last <= uio_in[5];
+	end else begin
+		r_down_xmt_ready <= 0;
+	end
+	
+	
+	always @(posedge pll_clk) 
+	if (!rst_n) begin
+		r_pll_counter <= 0;
+	end else begin
+		r_pll_counter <= r_pll_counter+1;
+	end
+
+
+	wire	  d_up_to_down;		// the 'LVS' up/down connection
+	wire	  d_down_to_up;
+
+	upstream up(.reset_n(rst_n), .refclk(clk), 
 `ifdef GL_TEST
             .VPWR(.VPWR), .VGND(VGND),
 `endif
-            .pll_count(pll_count),
-			.pll_test(pll_test),
+			.default_speed(default_speed),
+			.pll_clk(pll_clk),
+            .pll_count(r_pll_count),
+			.pll_test(r_test==0),
 
             .din(d_down_to_up), 
 			.dout(d_up_to_down),
@@ -62,46 +153,38 @@ module tt_um_speed_bus (
             .clk10(clk_up),
             .reset_out_n(up_reset_n),
 
+			.mgmt_ok(up_mgmt_ok),
+
             .rcv_out(up_rcv_out),
             .rcv_k(up_rcv_k),
             .rcv_ready(up_rcv_ready),
             .rcv_align(up_rcv_align),
 
-            .xmt_in(up_xmt_in),
-            .xmt_k(up_xmt_k),
-            .xmt_ready(up_xmt_ready)
+            .xmt_in(ui_in),
+            .xmt_k(uio_in[0]),
+            .xmt_ready(r_up_xmt_ready)
             );
 
-	wire [7:0]down_rcv_out;
-	wire	  down_rcv_k;
-    wire      down_rcv_ready;
-    wire	  down_rcv_align;
-
-	wire [7:0]down_xmt_in=0;
-	wire	  down_xmt_k=0;
-    wire      down_xmt_ready=0;
-
-	wire	  down_reset_n;
-	wire	  clk_down;
-
-	downstream down(.reset_n(down_reset_n), 
+	downstream down(.reset_n(rst_n), 
 `ifdef GL_TEST
             .VPWR(.VPWR), .VGND(VGND),
 `endif
-            .din(d_up_to_down), 
+            .din(d_up_to_down^r_force_rev), 
 			.dout(d_down_to_up),
 
             .clk10(clk_down),
             .reset_out_n(down_reset_n),
+
+			.mgmt_ok(down_mgmt_ok),
 
             .rcv_out(down_rcv_out),
             .rcv_k(down_rcv_k),
             .rcv_ready(down_rcv_ready),
             .rcv_align(down_rcv_align),
 
-            .xmt_in(down_xmt_in),
-            .xmt_k(down_xmt_k),
-            .xmt_ready(down_xmt_ready)
+            .xmt_in(ui_in),
+            .xmt_k(uio_in[0]),
+            .xmt_ready(r_down_xmt_ready)
             );
 
 

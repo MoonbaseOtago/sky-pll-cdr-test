@@ -8,7 +8,7 @@
 
 `timescale 1ns/1fs
 
-module downstream(output reset_n,
+module downstream(input reset_n,
 `ifdef GL_TEST
             inout VPWR, inout VGND,
 `endif
@@ -17,6 +17,8 @@ module downstream(output reset_n,
 
             output      clk10,
             output      reset_out_n,
+
+            output      mgmt_ok,
 
             output [7:0]rcv_out,
             output      rcv_k,
@@ -32,8 +34,8 @@ module downstream(output reset_n,
 
 
 
-	wire RESTART = 1'b0;
-	wire REV = 0;
+	wire RESTART;
+	wire REV;
 
 
     wire CLKI;
@@ -43,7 +45,9 @@ module downstream(output reset_n,
 
 	wire UP_N, DOWN_N;  // CP inputs
 	wire RESET;
+	/* verilator lint_off UNUSEDSIGNAL */
 	wire SYNCED;
+	/* verilator lint_on UNUSEDSIGNAL */
 	wire SYNCING;
 	wire [9:0]DI, DO;
 	wire XMT_READY, XMT_RD;
@@ -83,7 +87,7 @@ module downstream(output reset_n,
     wire      scramble = 1;
 	wire	  mgmt_ready;
 	wire	  local_rcv_ready;
-	assign	  rcv_ready = mgmt_ready&local_rcv_ready
+	assign	  rcv_ready = mgmt_ready&local_rcv_ready;
     down_des8b10    des(.CLK10(clk10), .RESET_OUT_N(reset_out_n), .DI(DI), .SYNCING(SYNCING),
                     .scramble(scramble),
                     .kout(rcv_k),
@@ -93,22 +97,28 @@ module downstream(output reset_n,
 
     wire        mgmt_k;
     wire   [7:0]mgmt_in;
-    wire        mgmt_ready;
     down_ser8b10    ser(.CLK10(clk10), .RESET_OUT_N(reset_out_n),
                     .DO(DO),
                     .XMT_READY(XMT_READY),
                     .XMT_RD(XMT_RD),
 
                     .scramble(scramble),
-                    .k(mgmt_ready?xmt_k:mgmt_k),
-                    .in(mgmt_ready?xmt_in:mgmt_in),
-                    .ready(mgmt_ready?xmt_ready:mgmt_ready));
+                    .k(mgmt_ok?xmt_k:mgmt_k),
+                    .in(mgmt_ok?xmt_in:mgmt_in),
+                    .ready(mgmt_ok?xmt_ready:mgmt_ready));
 
+	/* verilator lint_off UNUSEDSIGNAL */
 	wire [7:0]output_prog;	// output drivers programming (unused here)
-	mgmt #(.UPSTREAM(1))mgmt(
+	wire [6:0]speed; // not used for downstream
+	wire [6:0]default_speed=7'bx; // not used for downstream
+	/* verilator lint_on UNUSEDSIGNAL */
+	/* verilator lint_off PINMISSING */
+	mgmt #(.UPSTREAM(0))mgmt(
 				.reset_n(reset_n),
-				.clk10(CLK10), .RESET_OUT_N(reset_out_n),
+				.clk10(clk10), .reset_out_n(reset_out_n),
+				.xmt_prog(output_prog),
 				.speed(speed),
+				.default_speed(default_speed),
 				.rcv_out(rcv_out),
 				.rcv_k(rcv_k),
 				.rcv_ready(local_rcv_ready),
@@ -118,6 +128,7 @@ module downstream(output reset_n,
 				.rev(REV),
 				.restart(RESTART),
 				.mgmt_ok(mgmt_ok));
+	/* verilator lint_on PINMISSING */
 
 
 endmodule    

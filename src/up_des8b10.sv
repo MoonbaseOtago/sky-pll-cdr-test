@@ -19,7 +19,7 @@
 module up_des8b10(input RESET_OUT_N,  
 			   input scramble,
 			   input CLK10,
-			   inout SYNCING,
+			   input SYNCING,
 			   input [9:0]DI,
 
 			   output kout, output [7:0]out, 
