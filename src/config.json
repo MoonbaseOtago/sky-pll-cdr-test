@@ -42,7 +42,7 @@
     "pll2": {
       "instances": {
         "up.pll2": {
-          "location": [0.1, 1],
+          "location": [0.1, 3],
           "orientation": "N"
         }
       },
@@ -55,7 +55,7 @@
     "deskew": {
       "instances": {
         "up.deskew": {
-          "location": [0.1, 21],
+          "location": [0.1, 23],
           "orientation": "N"
         }
       },

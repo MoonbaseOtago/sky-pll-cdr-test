@@ -147,6 +147,8 @@ to N devices while Downstream devices continue to need 2 pairs.
 
 This is a 2x2 TT tile.
 
+![TILE](tile.png)
+
 The Upstream side consists of two macros (lower left hand side), the PLL mentioned above and a standard cell macro called "deskew" which contains all the logic that has to run at the full speed clock (2-300MHz).
 
 Deskew is sized to be the same width as the PLL and sits above it. Deskew contains the 1/10 clock generator and the output shift register,  it also contains a variable length delay chain (lots of buffers and a mux tree) and a bang-bang phase discriminator, this feed a variable length shift register to do symbol alignment to the 1/10 clock.
