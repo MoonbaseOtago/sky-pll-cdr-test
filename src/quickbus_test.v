@@ -25,15 +25,14 @@ module tt_um_quick_bus (
 	wire	  clk_up, clk_down;
 
 	wire [6:0]speed;
-	//wire	  dis=0;			// no failure
-	wire	  dis=speed[4];	// for this test fail at 300MHz
-	wire	  test_prog=1;			// no failure
-	//wire	  test_prog=speed[4];	// for this test fail at 300MHz
+	reg		  r_test_prog;
+	wire	  test_speed;
+	wire	  dis=speed[4]&test_speed;	// for this test fail at 300MHz
 
 	
 
 	wire [7:0]down_output_prog;	
-	wire      down_ok = !dis&((down_output_prog >= 5)|~test_prog);
+	wire      down_ok = !dis&(down_output_prog >= 5 || !r_test_prog);
 	wire [7:0]down_rcv_out;
 	wire	  down_rcv_k;
     wire      down_rcv_ready;
@@ -44,7 +43,7 @@ module tt_um_quick_bus (
 	wire	  down_reset_n;
 
 	wire [7:0]up_output_prog;	
-	wire      up_ok = !dis&((up_output_prog <=5)|~test_prog);
+	wire      up_ok = !dis&(up_output_prog <=5 || !r_test_prog );
 	wire [7:0]up_rcv_out;
 	wire	  up_rcv_k;
     wire      up_rcv_ready;
@@ -66,9 +65,11 @@ module tt_um_quick_bus (
 	//
 	reg	[1:0]r_test;
 	reg [3:0]r_pll_count;
+	assign test_speed = r_pll_count[3];
 	always @(posedge clk)
 	if (!rst_n) begin
 		r_test <= ui_in[7:6];
+		r_test_prog = ui_in[5];
 		r_force_rev <= ui_in[4];
 		r_pll_count <= ui_in[3:0];
 	end
@@ -98,6 +99,11 @@ module tt_um_quick_bus (
 	reg[7:0]ruio_oe;
 	assign uio_oe = ruio_oe;
 	always @(*)
+	if (!rst_n) begin
+			ruo_out = {pll_clk, clk_up, clk_down, 1'b0, r_pll_counter};
+			ruio_oe = 8'b0000_0000;
+			ruio_out = 8'bx;
+	end else
 	case (mode)	// synthesis full_case parallel_case
 	0:	begin		// mostly PLL test
 			ruo_out = {pll_clk, clk_up, clk_down, 1'b0, r_pll_counter};
@@ -200,8 +206,8 @@ module tt_um_quick_bus (
 	wire	     down_reg_ready;
 	reg		[7:0]r_rr;
 	always @(posedge clk_down)
-	if (!rst_n) begin
-			r_rr <= 0;
+	if (!down_reset_n) begin
+		r_rr <= 0;
 	end else begin
 		r_rr <= r_rr+1;
 	end

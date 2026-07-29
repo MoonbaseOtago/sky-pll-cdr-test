@@ -32,6 +32,8 @@ set_load  $cap_load [ all_outputs ]
 set_timing_derate -early [ expr {1-$::env(SYNTH_TIMING_DERATE)} ]
 set_timing_derate -late [ expr {1+$::env(SYNTH_TIMING_DERATE)} ]
 
+set_false_path -to { "up.pll2.COUNT_*" }
+
 
 # end
 

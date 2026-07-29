@@ -22,7 +22,7 @@ module test;
 
 	initial begin
 		$dumpvars;
-		#100000000;
+		#40000000;
 		$finish;
 	end
 
@@ -36,10 +36,15 @@ module test;
 		//		ui_in = {2'b00, 2'b0, 4'h3};
 		//		uio_in = {2'b00, 2'b0, 4'h0};
 		// speedbus
-				//ui_in <= {2'b01, 2'b0, 1'b0, 3'h1};		// come up at 100MHz
-				//ui_in <= {2'b01, 2'b0, 1'b0, 3'h2};		// come up at 100MHz, try 200MHz
-				ui_in <= {2'b01, 2'b0, 1'b0, 3'h3};		// come up at 100MHz, try 300MHz
-				uio_in <= {2'b01, 2'b0, 4'h0};
+		
+		//ui_in <= {2'b01, 2'b0, 1'b0, 3'h1};		// come up at 100MHz
+		//ui_in <= {2'b01, 2'b0, 1'b0, 3'h2};		// come up at 100MHz, try 200MHz
+		//ui_in <= {2'b01, 1'b1, 1'b0, 1'b0, 3'h3};	// come up at 100MHz, try 300MHz force prog failures
+		//ui_in <= {2'b01, 1'b1, 1'b0, 1'b1, 3'h3};	// come up at 100MHz, try 300MHz force prog failures and speed failures
+		//ui_in <= {2'b01, 1'b0, 1'b1, 1'b0, 3'h3};	// come up at 100MHz, try 300MHz force rev failures
+		ui_in <= {2'b10, 1'b0, 1'b0, 1'b0, 3'h3};	// come up at 100MHz, try 300MHz send data from down to up
+
+		uio_in <= {2'b01, 2'b0, 4'h0};
 		
 		rst_n <= 1;
 		#1;
