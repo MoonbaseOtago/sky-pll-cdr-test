@@ -24,6 +24,16 @@ module tt_um_quick_bus (
 	wire	  up_mgmt_ok, down_mgmt_ok;
 	wire	  clk_up, clk_down;
 
+	wire [6:0]speed;
+	//wire	  dis=0;			// no failure
+	wire	  dis=speed[4];	// for this test fail at 300MHz
+	wire	  test_prog=1;			// no failure
+	//wire	  test_prog=speed[4];	// for this test fail at 300MHz
+
+	
+
+	wire [7:0]down_output_prog;	
+	wire      down_ok = !dis&((down_output_prog >= 5)|~test_prog);
 	wire [7:0]down_rcv_out;
 	wire	  down_rcv_k;
     wire      down_rcv_ready;
@@ -33,6 +43,8 @@ module tt_um_quick_bus (
 	/* verilator lint_on UNUSEDSIGNAL */
 	wire	  down_reset_n;
 
+	wire [7:0]up_output_prog;	
+	wire      up_ok = !dis&((up_output_prog <=5)|~test_prog);
 	wire [7:0]up_rcv_out;
 	wire	  up_rcv_k;
     wire      up_rcv_ready;
@@ -48,9 +60,9 @@ module tt_um_quick_bus (
 	//
 	//	test modes:
 	//		0 - just PLL
-	//		1 - quick_bus 100MHz
-	//		2 - quick_bus 100-200MHz
-	//		3 - quick_bus 100-300MHz
+	//		1 - quick_bus speed from in[2:0]
+	//		2 - quick_bus generate data when online
+	//		3 - quick_bus with downstream unit
 	//
 	reg	[1:0]r_test;
 	reg [3:0]r_pll_count;
@@ -63,10 +75,14 @@ module tt_um_quick_bus (
 
 	reg [6:0]default_speed;
 	always @(*)
-	case (r_test)
+	case (r_pll_count[2:0])
 	0, 1:	default_speed = 7'b000_0010;
 	2:		default_speed = 7'b000_1010;
 	3:		default_speed = 7'b001_1010;
+	4:		default_speed = 7'b001_1111;
+	5:		default_speed = 7'b011_1111;
+	6:		default_speed = 7'b000_0001;
+	default:default_speed = 7'b000_0010;
 	endcase
 		
 
@@ -100,40 +116,46 @@ module tt_um_quick_bus (
 		end
 	default:
 		begin
-			ruo_out = 8'bx;
-			ruio_oe = 8'bx;
-			ruio_out = 8'bx;
+			ruo_out = 0;
+			ruio_oe = 8'b0001_1110;
+			ruio_out = 0;
 		end
 	endcase
 
-	reg r_up_last, r_up_xmt_ready;
-	reg r_down_last, r_down_xmt_ready;
+	reg r_up_last, r_up_xmt_ready, r_up_next;
+	reg r_down_last, r_down_xmt_ready, r_down_next;
 	always @(posedge clk_up) 
 	if (!rst_n) begin
+		r_up_next <= 0;
 		r_up_last <= 0;
 		r_up_xmt_ready <= 0;
-	end else 
-	if (mode == 2 && r_up_last != uio_in[5]) begin
-		r_up_xmt_ready <= 1;
-		r_up_last <= uio_in[5];
-	end else begin
-		r_up_xmt_ready <= 0;
+	end else  begin
+		r_up_last <= r_up_next;
+		r_up_next <= uio_in[5];
+		if (mode == 2 && r_up_last != r_up_next) begin
+			r_up_xmt_ready <= 1;
+		end else begin
+			r_up_xmt_ready <= 0;
+		end
 	end
 	
 	always @(posedge clk_down) 
 	if (!rst_n) begin
 		r_down_last <= 0;
+		r_down_next <= 0;
 		r_down_xmt_ready <= 0;
-	end else 
-	if (mode == 1 && r_down_last != uio_in[5]) begin
-		r_down_xmt_ready <= 1;
-		r_down_last <= uio_in[5];
 	end else begin
-		r_down_xmt_ready <= 0;
+		r_down_last <= r_down_next;
+		r_down_next <= uio_in[5];
+		if (mode == 1 && r_down_last != r_down_next) begin
+			r_down_xmt_ready <= 1;
+		end else begin
+			r_down_xmt_ready <= 0;
+		end
 	end
 	
 	
-	always @(posedge pll_clk) 
+	always @(posedge pll_clk or negedge rst_n) 
 	if (!rst_n) begin
 		r_pll_counter <= 0;
 	end else begin
@@ -148,12 +170,14 @@ module tt_um_quick_bus (
 `ifdef GL_TEST
             .VPWR(.VPWR), .VGND(VGND),
 `endif
+			.output_prog(up_output_prog),	
 			.default_speed(default_speed),
+			.speed(speed),		// for debug
 			.pll_clk(pll_clk),
             .pll_count(r_pll_count),
 			.pll_test(r_test==0),
 
-            .din(d_down_to_up), 
+            .din(d_down_to_up&up_ok), 
 			.dout(d_up_to_down),
 
             .clk10(clk_up),
@@ -171,13 +195,27 @@ module tt_um_quick_bus (
             .xmt_ready(r_up_xmt_ready)
             );
 
+	wire	[7:0]down_reg_in;
+	wire	     down_reg_k;
+	wire	     down_reg_ready;
+	reg		[7:0]r_rr;
+	always @(posedge clk_down)
+	if (!rst_n) begin
+			r_rr <= 0;
+	end else begin
+		r_rr <= r_rr+1;
+	end
+
+
 	downstream down(.reset_n(rst_n), 
 `ifdef GL_TEST
             .VPWR(.VPWR), .VGND(VGND),
 `endif
-            .din(d_up_to_down^r_force_rev), 
+            .din((d_up_to_down^r_force_rev)&down_ok), 
 			.dout(d_down_to_up),
 
+			.output_prog(down_output_prog),	
+			.default_speed(7'b001_1111),
             .clk10(clk_down),
             .reset_out_n(down_reset_n),
 
@@ -188,10 +226,27 @@ module tt_um_quick_bus (
             .rcv_ready(down_rcv_ready),
             .rcv_align(down_rcv_align),
 
-            .xmt_in(ui_in),
-            .xmt_k(uio_in[0]),
-            .xmt_ready(r_down_xmt_ready)
+            .xmt_in(r_test==3?down_reg_in:(r_test==2?r_rr:ui_in)),
+            .xmt_k(r_test==3?down_reg_k:(r_test==2?1'b0:uio_in[0])),
+            .xmt_ready(r_test==3?down_reg_ready:(r_test==2?down_mgmt_ok:r_down_xmt_ready))
             );
+
+
+	down_registers regs(.reset_n(down_reset_n), .clk10(clk_down),
+`ifdef GL_TEST
+            .VPWR(VPWR), .VGND(VGND),
+`endif
+			.rcv_out(down_rcv_out),
+			.rcv_k(down_rcv_k),
+			.rcv_ready(down_rcv_ready),
+			.rcv_align(down_rcv_align),
+
+			.xmt_in(down_reg_in),
+			.xmt_k(down_reg_k),
+			.xmt_ready(down_reg_ready),
+
+			.mgmt_ok(down_mgmt_ok));
+
 
 
 endmodule

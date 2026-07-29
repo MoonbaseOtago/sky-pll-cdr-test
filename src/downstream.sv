@@ -15,6 +15,8 @@ module downstream(input reset_n,
 
             input din, output dout,
 
+			input  [6:0]default_speed,
+			output [7:0]output_prog,
             output      clk10,
             output      reset_out_n,
 
@@ -50,7 +52,7 @@ module downstream(input reset_n,
 	/* verilator lint_on UNUSEDSIGNAL */
 	wire SYNCING;
 	wire [9:0]DI, DO;
-	wire XMT_READY, XMT_RD;
+	wire XXMT_READY, XMT_RD;
 
 	cdrs cdrs(
 `ifdef GL_TEST
@@ -67,7 +69,7 @@ module downstream(input reset_n,
         .DI(DI),
         .DO(DO),
         .DOUT(dout),
-        .XMT_READY(XMT_READY),
+        .XMT_READY(XXMT_READY),
         .XMT_RD(XMT_RD),
 
     // CP/VCO interface
@@ -99,7 +101,7 @@ module downstream(input reset_n,
     wire   [7:0]mgmt_in;
     down_ser8b10    ser(.CLK10(clk10), .RESET_OUT_N(reset_out_n),
                     .DO(DO),
-                    .XMT_READY(XMT_READY),
+                    .XMT_READY(XXMT_READY),
                     .XMT_RD(XMT_RD),
 
                     .scramble(scramble),
@@ -108,9 +110,7 @@ module downstream(input reset_n,
                     .ready(mgmt_ok?xmt_ready:mgmt_ready));
 
 	/* verilator lint_off UNUSEDSIGNAL */
-	wire [7:0]output_prog;	// output drivers programming (unused here)
 	wire [6:0]speed; // not used for downstream
-	wire [6:0]default_speed=7'bx; // not used for downstream
 	/* verilator lint_on UNUSEDSIGNAL */
 	/* verilator lint_off PINMISSING */
 	mgmt #(.UPSTREAM(0))mgmt(

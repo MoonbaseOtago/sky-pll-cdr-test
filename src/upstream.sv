@@ -14,6 +14,8 @@ module upstream(input reset_n, input refclk,
 			input      pll_test,
 			output	   pll_clk,
 			input [6:0]default_speed,
+			output [6:0]speed,
+			output[7:0]output_prog,
 
 			input din, output dout,
 
@@ -58,7 +60,7 @@ module upstream(input reset_n, input refclk,
 	/* verilator lint_on UNUSEDSIGNAL */
     wire RESTART;
     wire REV;
-	wire XMT_READY, XMT_RD;
+	wire XXMT_READY, XMT_RD;
 	wire mgmt_k, mgmt_ready;
 	wire [7:0]mgmt_in;
 	wire local_rcv_ready;
@@ -74,7 +76,7 @@ module upstream(input reset_n, input refclk,
                     .SYNCED(SYNCED),
 
                     .DO(DO),
-                    .XMT_READY(XMT_READY),
+                    .XMT_READY(XXMT_READY),
                     .XMT_RD(XMT_RD));
 
     wire      scramble = 1;
@@ -87,7 +89,7 @@ module upstream(input reset_n, input refclk,
 
     up_ser8b10  ser(.CLK10(clk10), .RESET_OUT_N(reset_out_n),
                     .DO(DO),
-                    .XMT_READY(XMT_READY),
+                    .XMT_READY(XXMT_READY),
                     .XMT_RD(XMT_RD),
 
                     .scramble(scramble),
@@ -100,7 +102,6 @@ module upstream(input reset_n, input refclk,
 	//	link management
 	//
 	/* verilator lint_off CASEOVERLAP */
-	wire [6:0]speed;
 	always @(*)
 	if (pll_test) begin
 		pll_clk_speed = pll_count;
@@ -115,9 +116,6 @@ module upstream(input reset_n, input refclk,
 	endcase
 	/* verilator lint_on CASEOVERLAP */
 	
-	/* verilator lint_off UNUSEDSIGNAL */
-	wire [7:0]output_prog;	// output drivers programming (unused here)
-	/* verilator lint_on UNUSEDSIGNAL */
 	mgmt #(.UPSTREAM(1))mgmt(
 				.reset_n(reset_n),
 				.clk10(clk10), .reset_out_n(reset_out_n),

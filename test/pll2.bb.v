@@ -6,7 +6,7 @@
 `default_nettype none
 
 
-`timescale 1ns/1ps
+`timescale 1ps/1ps
 
 module pll2(input RESET_N,
 `ifdef GL_TEST
@@ -27,7 +27,8 @@ module pll2(input RESET_N,
 	assign RESET_OUT_N = r_RESET_OUT_N;
 
 	reg [3:0]c;
-	always @ (posedge r_CLK) begin
+	always @ (posedge r_CLK)
+	if (RESET_N) begin
 		c<= c+1;
 		if (c== 15)
 			r_RESET_OUT_N <= 1;
@@ -40,33 +41,41 @@ module pll2(input RESET_N,
 	end
 
 	reg [31:0]freq;
-	always @(*)
-	case (count)
-	0: freq = 25;
-	1: freq = 50;
-	2: freq = 75;
-	3: freq = 100;
-	4: freq = 125;
-	5: freq = 150;
-	6: freq = 175;
-	7: freq = 200;
-	8: freq = 225;
-	9: freq = 250;
-	10: freq = 275;
-	11: freq = 300;
-	12: freq = 325;
-	13: freq = 350;
-	14: freq = 375;
-	15: freq = 400;
-	endcase
-	reg [31:0]delay = 1000000/freq/2;
+	initial begin
+		forever begin
+			case (count)
+			0: freq = 25;
+			1: freq = 50;
+			2: freq = 75;
+			3: freq = 100;
+			4: freq = 125;
+			5: freq = 150;
+			6: freq = 175;
+			7: freq = 200;
+			8: freq = 225;
+			9: freq = 250;
+			10: freq = 275;
+			11: freq = 300;
+			12: freq = 325;
+			13: freq = 350;
+			14: freq = 375;
+			15: freq = 400;
+			endcase
+			@(count);
+		end
+	end
+
+	wire [31:0]delay = (|freq === 1'bx ? 32'hbadbad:1000000/freq/2);
 	initial begin
 		r_CLK <= 0;
-		#10
-		forever #(delay) r_CLK <= ~r_CLK;
+		#100000
+		forever #(delay) begin
+			r_CLK <= ~r_CLK;
+		end
 	end
 	
 `endif
 
 
 endmodule
+`timescale 1ns/1ps

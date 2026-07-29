@@ -26,7 +26,7 @@ library (deskew) {
   nom_process : 1.0;
   nom_temperature : 25.0;
   nom_voltage : 1.8;
-  cell (pll) {
+  cell (deskew) {
     dont_touch : true;
     dont_use : true;
     map_only : true;

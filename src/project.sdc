@@ -23,7 +23,7 @@ set_clock_uncertainty $::env(SYNTH_CLOCK_UNCERTAINTY) [ get_clocks clk_down ]
 set_clock_transition $::env(SYNTH_CLOCK_TRANSITION) [ get_clocks clk_down ]
 
 # rp2040_clk  and  fpga_clk  are mesochronous, and they never interact
-set_clock_groups -asynchronous -group { clk } -group { clk_clk_up } -group { clk_clk_down }
+set_clock_groups -asynchronous -group { clk } -group { clk_up } -group { clk_down }
 
 
 # Miscellanea

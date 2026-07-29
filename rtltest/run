@@ -1,0 +1,1 @@
+iverilog -DSYS_TEST -o test test.v ../src/down_des8b10.sv ../src/down_ser8b10.sv  ../src/downstream.sv    ../src/lfsr8b10b.sv   ../src/mgmt.sv ../src/quickbus_test.v  ../src/up_des8b10.sv  ../src/up_ser8b10.sv ../src/upstream.sv ../test/cdr_cp_vco.bb.v  ../macros/cdrsup/cdrs.v  ../macros/deskew/deskew.v  ../test/pll2.bb.v  ../src/down_registers.sv

@@ -13,7 +13,7 @@
 
   "//": "PL_TARGET_DENSITY_PCT - You can increase this if Global Placement fails with error GPL-0302.",
   "//": "Users have reported that values up to 80 worked well for them.",
-  "PL_TARGET_DENSITY_PCT": 60,
+  "PL_TARGET_DENSITY_PCT": 80,
 
   "//": "CLOCK_PERIOD - Increase this in case you are getting setup time violations.",
   "//": "The value is in nanoseconds, so 20ns == 50MHz.",
@@ -34,6 +34,7 @@
 
   "BASE_SDC_FILE": "dir::project.sdc",
   "SYNTH_AUTONAME": 1,
+  "GRT_ADJUSTMENT": 0.0,
 
 
   "EXTRA_VERILOG_MODELS" : "src/pll2.bb.v src/cdr_cp_vco.bb.v src/cdrs.bb.v src/deskew.bb.v",
@@ -68,7 +69,7 @@
     "cdr_cp_vco": {
       "instances": {
         "down.cp_vco": {
-          "location": [255, 1],
+          "location": [257, 1],
           "orientation": "FS"
         }
       },
@@ -81,7 +82,7 @@
     "cdrs": {
       "instances": {
         "down.cdrs": {
-          "location": [255, 20],
+          "location": [257, 20],
           "orientation": "N"
         }
       },

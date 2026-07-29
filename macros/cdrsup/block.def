@@ -3,10 +3,10 @@ DIVIDERCHAR "/" ;
 BUSBITCHARS "[]" ;
 DESIGN tt_um_template ;
 UNITS DISTANCE MICRONS 1000 ;
-DIEAREA ( 0 0 ) ( 77000 66000 ) ;
+DIEAREA ( 0 0 ) ( 75000 93000 ) ;
 COMPONENTS 0 ;
 END COMPONENTS
-PINS 35 ;
+PINS 38 ;
     - CLKI + NET CLKI + DIRECTION INPUT + USE SIGNAL
       + PORT
         + LAYER met2 ( -150 -500 ) ( 150 500 )
@@ -35,133 +35,129 @@ PINS 35 ;
       + PORT
         + LAYER met2 ( -150 -500 ) ( 150 500 )
         + PLACED ( 6175 500 ) S ;
-
-
     - XMT_READY + NET XMT_READY + DIRECTION INPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 58000 ) W ;
     - XMT_RD + NET XMT_RD + DIRECTION INPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 56000 ) W ;
     - DO[0] + NET DO[0] + DIRECTION INPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 54500 ) W ;
     - DO[1] + NET DO[1] + DIRECTION INPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 53000 ) W ;
     - DO[2] + NET DO[2] + DIRECTION INPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 51500 ) W ;
     - DO[3] + NET DO[3] + DIRECTION INPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 50000 ) W ;
     - DO[4] + NET DO[4] + DIRECTION INPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 48500 ) W ;
     - DO[5] + NET DO[5] + DIRECTION INPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 47000 ) W ;
     - DO[6] + NET DO[6] + DIRECTION INPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 45500 ) W ;
     - DO[7] + NET DO[7] + DIRECTION INPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 44000 ) W ;
     - DO[8] + NET DO[8] + DIRECTION INPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 42000 ) W ;
     - DO[9] + NET DO[9] + DIRECTION INPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 40000 ) W ;
     - DOUT + NET DOUT + DIRECTION OUTPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 38000 ) W ;
-
-
     - CLK10 + NET CLK10 + DIRECTION OUTPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 36000 ) W ;
     - DI[0] + NET DI[0] + DIRECTION OUTPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 34000 ) W ;
     - DI[1] + NET DI[1] + DIRECTION OUTPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 32000 ) W ;
     - DI[2] + NET DI[2] + DIRECTION OUTPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 30000 ) W ;
     - DI[3] + NET DI[3] + DIRECTION OUTPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 28000 ) W ;
     - DI[4] + NET DI[4] + DIRECTION OUTPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 26000 ) W ;
     - DI[5] + NET DI[5] + DIRECTION OUTPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 24000 ) W ;
     - DI[6] + NET DI[6] + DIRECTION OUTPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 22000 ) W ;
     - DI[7] + NET DI[7] + DIRECTION OUTPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 20000 ) W ;
     - DI[8] + NET DI[8] + DIRECTION OUTPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 18000 ) W ;
     - DI[9] + NET DI[9] + DIRECTION OUTPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 16000 ) W ;
     - SYNCED + NET SYNCED + DIRECTION OUTPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 14000 ) W ;
     - SYNCING + NET SYNCING + DIRECTION OUTPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 12000 ) W ;
     - RESET_OUT_N + NET RESET_OUT_N + DIRECTION OUTPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 10000 ) W ;
     - RESET_N + NET RESET_N + DIRECTION INPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 8000 ) W ;
     - RESTART + NET RESTART + DIRECTION INPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 6000 ) W ;
     - REV + NET REV + DIRECTION INPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 4000 ) W ;
     - DIN + NET DIN + DIRECTION INPUT + USE SIGNAL
       + PORT
-        + LAYER met2 ( -200 -100 ) ( 200 100 )
+        + LAYER met1 ( -200 -100 ) ( 200 100 )
         + PLACED ( 150 2000 ) W ;
 
 
@@ -170,7 +166,7 @@ SPECIALNETS 2 ;
     - VGND + USE GROUND ;
     - VPWR + USE POWER ;
 END SPECIALNETS
-NETS 35 ;
+NETS 38 ;
     - CLKI ( PIN CLKI ) + USE SIGNAL ;
     - CLKI_N ( PIN CLKI_N ) + USE SIGNAL ;
     - CLKQ ( PIN CLKQ ) + USE SIGNAL ;
@@ -186,6 +182,9 @@ NETS 35 ;
     - DOUT ( PIN DOUT ) + USE SIGNAL ;
     - XMT_READY ( PIN XMT_READY ) + USE SIGNAL ;
     - XMT_RD ( PIN XMT_RD ) + USE SIGNAL ;
+    - RESET_OUT_N ( PIN RESET_OUT_N ) + USE SIGNAL ;
+    - SYNCING ( PIN SYNCING ) + USE SIGNAL ;
+    - SYNCED ( PIN SYNCED ) + USE SIGNAL ;
     - DO[0] ( PIN DO[0] ) + USE SIGNAL ;
     - DO[1] ( PIN DO[1] ) + USE SIGNAL ;
     - DO[2] ( PIN DO[2] ) + USE SIGNAL ;

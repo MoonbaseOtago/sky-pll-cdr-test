@@ -40,8 +40,8 @@ module cdrs(
 	);
 
 	// CP/VCO
-	wire din = DIN^REV;
-	assign RESET = ~RESET_N|RESTART;	// VCO analog reset
+	wire ddin = DIN^REV;
+	assign RESET = ~RESET_N;	// VCO analog reset
 
 	//
 	//	This is the high speed part of the downstream side of a link,
@@ -83,10 +83,10 @@ module cdrs(
 
 	always @(posedge CLKI) begin
 		r_in_x <= r_in_n[0];
-		r_in_p <= {r_in_p[8:0], din};
+		r_in_p <= {r_in_p[8:0], ddin};
 	end
 	always @(posedge CLKI_N) 
-		r_in_n <= {r_in_n[4:0], din};
+		r_in_n <= {r_in_n[4:0], ddin};
 
 	// Phase detector - bang-bang stationkeeping
 
@@ -127,12 +127,26 @@ module cdrs(
 	//
 
 	wire io0, io1, qo0, qo1;
-	deff i0(.c(din), .d(CLKI), .q(io0));	
-	deff i1(.c(din), .d(io0), .q(io1));
-	deff q0(.c(din), .d(CLKQ), .q(qo0));
-	deff q1(.c(din), .d(qo0), .q(qo1));
+	(* dont_touch = "yes" *) (*keep *) deff i0(.c(DIN), .d(CLKI), .q(io0));	
+	(* dont_touch = "yes" *) (*keep *) deff i1(.c(DIN), .d(io0), .q(io1));
+	(* dont_touch = "yes" *) (*keep *) deff q0(.c(DIN), .d(CLKQ), .q(qo0));
+	(* dont_touch = "yes" *) (*keep *) deff q1(.c(DIN), .d(qo0), .q(qo1));
 	wire MID_UP     = qo0&!io0&!io1&!qo1&~(r_searching_down|r_searching_up);
 	wire MID_DOWN   = io0&!qo0&!io1&!qo1&~(r_searching_down|r_searching_up);
+
+	reg  [8:0]r_timeout;
+	wire     timed_out = &r_timeout;		// false lock detector for freq detector
+	always @(posedge CLKI) begin
+		if (RESTART || r_searching_down ||r_searching_up) begin
+			r_timeout <=0;
+		end else
+		if (r_searching_mid) begin
+			r_timeout <= r_timeout+1;
+		end else
+		if (r_cnt == 0 && (|r_timeout)) begin
+			r_timeout <= r_timeout-1;
+		end
+	end
 
 	//
 	//  high level state machine
@@ -141,9 +155,9 @@ module cdrs(
 	reg 	 r_qdp;
 	reg [1:0]r_qdn;
 	always @(posedge CLKQ)
-		r_qdp <= din;
+		r_qdp <= ddin;
 	always @(posedge CLKQ_N)
-		r_qdn <= {r_qdn[0],din};
+		r_qdn <= {r_qdn[0],ddin};
 
 	wire too_low =	( r_qdn[1] &!r_in_p[0]& r_qdp ) ||		// too slow?
 					(!r_qdn[1] & r_in_p[0]&!r_qdp ) ||
@@ -152,8 +166,8 @@ module cdrs(
 					(!r_in_p[0]& r_qdp    &!r_in_n[0]) ||
 					( r_qdp    &!r_in_n[0]& r_qdn[0]) ||
 					(!r_qdp    & r_in_n[0]&!r_qdn[0]) ||
-					( r_in_n[0]&!r_qdn[0] & din) ||
-					(!r_in_n[0]& r_qdn[0] &!din);
+					( r_in_n[0]&!r_qdn[0] & ddin) ||
+					(!r_in_n[0]& r_qdn[0] &!ddin);
 	
 	wire too_high =	( &r_in_p[5:0] && &r_in_n[5:1]) ||
 					(~|r_in_p[5:0]&& ~|r_in_n[5:1]); // 6 1s/0s in a row -  too fast
@@ -175,7 +189,7 @@ module cdrs(
 		end else begin
 			r_cnt <=  r_cnt-1;
 /* verilator lint_off CASEOVERLAP */
-			casez ({too_low, too_high, ~r_searching_up&match, locked&(MID_UP|MID_DOWN), r_searching_mid}) // synthesis full_case parallel_case */
+			casez ({too_low|timed_out, too_high, ~r_searching_up&match, locked&(MID_UP|MID_DOWN), r_searching_mid}) // synthesis full_case parallel_case */
 			5'b1?_???:begin	// too_low
 						r_searching_down <= 0;
 						r_searching_mid <= 0;
@@ -292,7 +306,7 @@ module cdrs(
 	//
 
 	reg [9:0]r_dout;
-	assign DOUT = r_dout[9];
+	assign DOUT = r_dout[9]&!(r_searching_up|r_searching_down|r_searching_mid|(|r_timeout));
 	always @(posedge CLKI)
 	if (!RESET_N) begin
 		r_dout <= 10'b110000_1011; // only here to pass gatesim
@@ -312,7 +326,6 @@ module cdrs(
 		end
 	end
 endmodule
-
 module deff(input c, input d, output q);
 
 	reg p, n;

@@ -9,7 +9,7 @@
 `default_nettype none
 //`define TEST
 //`define GL_TEST
-`ifdef TEST
+`ifdef SYS_TEST
 
 module sky130_fd_sc_hd__buf_1(input A, output X);
 
@@ -203,6 +203,17 @@ module deskew(
 
 	output	   DOUT
 	);
+
+`ifdef NOTDEF
+	/* verilator lint_off UNUSEDSIGNAL */
+	wire dummy;
+	/* verilator lint_on UNUSEDSIGNAL */
+(*keep*)power_strap strap (
+`ifdef GL_TEST
+            .VPWR(VPWR), .VGND(VGND) 
+`endif
+		);
+`endif
 
 	// first fixed symbol - this or its inverse
 	wire[9:0]hdr = 10'b0011111010;

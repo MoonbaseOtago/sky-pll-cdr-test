@@ -2,7 +2,7 @@
  * Copyright (c) 2026 Paul Campbell
  * SPDX-License-Identifier: Apache-2.0
  */                 
-         
+`timescale 1fs/1fs
 module cdr_cp_vco(input RESET,
 `ifdef GL_TEST
 		  inout VPWR, inout VGND,
@@ -12,14 +12,14 @@ module cdr_cp_vco(input RESET,
                   output CLKQ, output CLKQ_N);
 
 `ifdef SYS_TEST
-    parameter LARGE_UPD = 1;
-    parameter LARGE_DOWND = 1;
+    parameter LARGE_UPD = 10;
+    parameter LARGE_DOWND = 7;
     parameter MID_UPD   = 1;
     parameter MID_DOWND = 1;
     parameter SMALL_DOWND = 1;
     parameter SMALL_UPD = 1;
     parameter INITD = 100000000;    // 100 nS/ 10 MHz
-    parameter TC=500;
+    parameter TC=20000;
     reg[31:0]rdelay=INITD;
     wire[31:0]delay=INITD-rdelay;
     wire [63:0]freq = 1000000000/(2*rdelay);
@@ -29,9 +29,13 @@ module cdr_cp_vco(input RESET,
     assign CLKQ = clkq;
     assign CLKI_N = ~clki;
     assign CLKQ_N = ~clkq;
+	reg [5:0]cc;
     // CP
     initial begin
+		cc = 0;
         forever begin
+			if (cc==0 &&rdelay< INITD ) rdelay = rdelay +1;
+			cc = cc+1;
             if (RESET) begin
                 rdelay = INITD;
             end else begin
@@ -59,6 +63,7 @@ module cdr_cp_vco(input RESET,
     end
 `endif
 endmodule
+`timescale 1ns/1fs
 /* For Emacs:
  * Local Variables: 
  * mode:c   

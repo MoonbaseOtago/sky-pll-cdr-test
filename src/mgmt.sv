@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2026 Paul Campbell
  * SPDX-License-Identifier: Apache-2.0
@@ -35,8 +34,8 @@ module mgmt(input reset_n,
 
 
 	//
-	//	startup protocol - for both ends, but upstream is in controlbecause it
-    //	    controls the clock
+	//	startup protocol - for both ends, but upstream is in control because it
+    //	    controls the clock. 
 	//
 	//	Startup needs to:
 	//
@@ -48,19 +47,22 @@ module mgmt(input reset_n,
 	//		   minimum and maximum values it's seen that contain 32 non-error symbols) - transmitters
     //		   send at least one complete sequence after it sees a max/min value - this is with the command
 	//		   "START_UP"
+	//		   Note: some tgransmit driver options (too weak, too string) may mean that the downstream
+	//				 side does not get a reliable clock, upstream needs to repeat training data enough
+	//				 times for the downstream CDR to lock, upstream does better by being fast
 	//		3) after 2) above is done the transmnitter chooses an implementation specific
 	//		   value based on max/min (might be an average might be something else) and starts transmitting
 	//		   "XMT_RUNNING", we wait for the other side to also send XMT_RUNNING
-    //		4) if we're searching down and we don't get a response after sending 4 sets of Nx32 we go down
+    //		4) if we're searching down and we don't get a response after sending 8 sets of Nx32 we go down
 	//		   to the next freq and back to 1)
 	//		5) when UPSTREAM detects XMT_RUNNING in both directions upstream takes the AND of its speed
 	//         capabilities and the downstream's works from the highest speed down until it finds one
     //		   that works (by changing the freq and switching to 1) ), if there's no higher freq or it's
-	//		   searching down) otherwise we switch to 6) before switching it sends 4 "FREQ SWITCHING"
+	//		   searching down) otherwise we switch to 6) before switching it sends 8 "FREQ SWITCHING"
 	//		   with the target freq as th only bit in the bit mask
 	//		6) we've chosen a freq upstream starts sending "GO_ONLINE"
 	//		7) when it sees "GO_ONLINE" downstream starts repeating "GO_ONLINE"
-	//		8) when upstream sees "GO_ONLINE" it sends 4x "ONLINE" and marks itself "idle" and
+	//		8) when upstream sees "GO_ONLINE" it sends 8x "ONLINE" and marks itself "idle" and
 	//		   quits sending packets
 	//		9) when downstream receives "ONLINE" it marks itself "idle" and stops sending
 	//
@@ -72,7 +74,7 @@ module mgmt(input reset_n,
 	//
 	//	0: COM	
 	//  1: PAD
-	//	2: 4A
+	//	2: 5D			     - we run with LFSR turned on, 5D->4A which has a symbol that is not the same when inverted
 	//  3: XX	XMT PROG
 	//  4: 00	RCV MIN PROG - min successfull prog received - 0 means none
 	//  5: 00	RCV MAX PROG
@@ -114,6 +116,23 @@ module mgmt(input reset_n,
 	localparam SPEED_400 = 7'b001_0000;
 	localparam SPEED_500 = 7'b010_0000;
 	localparam SPEED_800 = 7'b100_0000;
+
+	//
+	//	Upstream algorithm for determining speed:
+	//
+	//		1) try to connect at 100MHz, drop back to 50MHz (if supported)
+	//		2) get the downstream speed supported mask, and it with local mask
+	//		3) if highest common bit is the same as this speed stop
+	//		4) start at the highest common bit and work down until things work
+	//		5) if nothing found	go back to 1)
+	//
+
+	//localparam MAX_COUNT = 5'h3;
+	//localparam MAX_COUNT = 5'd7;
+	//localparam MAX_COUNT = (UPSTREAM ? 5'd31: 5'd7);
+	localparam MAX_COUNT = 5'd31;
+
+	generate
 	
 
 	reg		 r_rev, c_rev;
@@ -127,7 +146,7 @@ module mgmt(input reset_n,
 	reg		 r_xmt_ready, c_xmt_ready;
 	assign		xmt_ready = r_xmt_ready;
 
-	reg [1:0]r_state, c_state;
+	reg [1:0]r_rstate, c_rstate;
 	reg [4:0]r_rcount, c_rcount;
 	reg [4:0]r_xcount, c_xcount;
 	reg [2:0]r_xphase, c_xphase;
@@ -137,21 +156,153 @@ module mgmt(input reset_n,
 	reg [7:0]r_xmt_min, c_xmt_min;
 	reg [7:0]r_xmt_max, c_xmt_max;
 	reg [7:0]r_rcv_level, c_rcv_level;
-	reg [6:0]r_rcv_speed, c_rcv_speed;
+	localparam MAX_CYCLES = (UPSTREAM?5'h1f:5'h5);
+	reg	[4:0]r_xmt_cycles, c_xmt_cycles;
 	reg      r_reset_count, c_reset_count;
 	reg	     r_seen_prog, c_seen_prog;
 	reg		 r_idle, c_idle;
 	assign mgmt_ok = r_idle;
 	reg [2:0]r_cmd, c_cmd;
 
+	reg	[2:0]r_last_cmd, c_last_cmd;
 	reg [6:0]r_xmt_speed, c_xmt_speed;
-	reg [6:0]r_upstream_speed, c_upstream_speed;
-	assign speed = r_upstream_speed;
-	reg	     r_searching_down, c_searching_down;
-	reg [6:0]next_speed;
+	reg [6:0]c_upstream_speed;
+	wire [6:0]prev_upstream_speed, prev_rcv_speed, prev_next_speed;;
+	reg [6:0]c_rcv_speed;		
+	reg [6:0]c_next_speed;
+	reg	     c_searching_down;
+	wire	 prev_searching_down;
+	wire	is_max_speed;
+	wire [6:0]next_upstream_speed, next_default_speed, first_upstream_speed;
+	wire	last_speed, last_default_speed;
+	wire last_recycle;
+	reg		reset_recycle, next_recycle;
+	if (UPSTREAM) begin : up		// this is where we hide the extra state/logic that's
+						    // only required in the upstream management engine
+		reg	     r_searching_down;
+		reg [6:0]r_rcv_speed;	// the speeds that the downstream can support
+		assign prev_rcv_speed = r_rcv_speed;
+		reg [6:0]r_upstream_speed;					// actual speed to PLL (as a bit mask
+		reg [6:0]r_next_speed;						// the speed we're going to shift to after announcing
+		assign prev_next_speed = r_next_speed;
+		wire [6:0]valid_speeds = r_rcv_speed&default_speed;	// intersection of speeds we support and speeds downstream supports
+		
 
-	always @(*)
-		next_speed = {6'b0, r_searching_down};	/* FIXME */
+		reg [6:0]xnext_upstream_speed, xnext_default_speed, xfirst_upstream_speed;
+		reg xlast_speed, xlast_default_speed;
+		always @(*) begin
+			casez(valid_speeds) // synthesis full_case parallel_case		// the first highest speed
+			7'b1??_????: xfirst_upstream_speed = 7'b100_0000;
+			7'b01?_????: xfirst_upstream_speed = 7'b010_0000;
+			7'b001_????: xfirst_upstream_speed = 7'b001_0000;
+			7'b000_1???: xfirst_upstream_speed = 7'b000_1000;
+			7'b000_01??: xfirst_upstream_speed = 7'b000_0100;
+			7'b000_001?: xfirst_upstream_speed = 7'b000_0010;
+			7'b000_0001: xfirst_upstream_speed = 7'b000_0001;
+			7'b000_0000: xfirst_upstream_speed = 7'b000_0010;
+			endcase
+		end
+
+		/* verilator lint_off CASEOVERLAP */
+		always @(*) begin
+			xlast_speed = 0;
+			casez({r_upstream_speed, valid_speeds}) // synthesis full_case parallel_case	// the next speed below the current one
+			14'b1??_????__?1?_????: xnext_upstream_speed = 7'b010_0000;
+			14'b1??_????__?01_????: xnext_upstream_speed = 7'b001_0000;
+			14'b1??_????__?00_1???: xnext_upstream_speed = 7'b000_1000;
+			14'b1??_????__?00_01??: xnext_upstream_speed = 7'b000_0100;
+			14'b1??_????__?00_001?: xnext_upstream_speed = 7'b000_0010;
+			14'b1??_????__?00_0001: xnext_upstream_speed = 7'b000_0001;
+			14'b1??_????__?00_0000: begin xnext_upstream_speed = 7'b000_0010; xlast_speed = 1; end
+			14'b?1?_????__??1_????: xnext_upstream_speed = 7'b001_0000;
+			14'b?1?_????__??0_1???: xnext_upstream_speed = 7'b000_1000;
+			14'b?1?_????__??0_01??: xnext_upstream_speed = 7'b000_0100;
+			14'b?1?_????__??0_001?: xnext_upstream_speed = 7'b000_0010;
+			14'b?1?_????__??0_0001: xnext_upstream_speed = 7'b000_0001;
+			14'b?1?_????__??0_0000: begin xnext_upstream_speed = 7'b000_0010; xlast_speed = 1; end
+			14'b??1_????__???_1???: xnext_upstream_speed = 7'b000_1000;
+			14'b??1_????__???_01??: xnext_upstream_speed = 7'b000_0100;
+			14'b??1_????__???_001?: xnext_upstream_speed = 7'b000_0010;
+			14'b??1_????__???_0001: xnext_upstream_speed = 7'b000_0001;
+			14'b??1_????__???_0000: begin xnext_upstream_speed = 7'b000_0010; xlast_speed = 1; end
+			14'b???_1???__???_?1??: xnext_upstream_speed = 7'b000_0100;
+			14'b???_1???__???_?01?: xnext_upstream_speed = 7'b000_0010;
+			14'b???_1???__???_?001: xnext_upstream_speed = 7'b000_0001;
+			14'b???_1???__???_?000: begin xnext_upstream_speed = 7'b000_0010; xlast_speed = 1; end
+			14'b???_?1??__???_??1?: xnext_upstream_speed = 7'b000_0010;
+			14'b???_?1??__???_??01: xnext_upstream_speed = 7'b000_0001;
+			14'b???_?1??__???_??00: begin xnext_upstream_speed = 7'b000_0010; xlast_speed = 1; end
+			14'b???_??1?__???_???1: xnext_upstream_speed = 7'b000_0001;
+			14'b???_??1?__???_???0: begin xnext_upstream_speed = 7'b000_0010; xlast_speed = 1; end
+			14'b???_???1__???_????: begin xnext_upstream_speed = 7'b000_0010; xlast_speed = 1; end
+			default: xnext_upstream_speed = 7'bx;
+			endcase
+		end
+		/* verilator lint_on CASEOVERLAP */
+
+		always@(*) begin
+			xlast_default_speed = 0;
+			casez(r_upstream_speed) // synthesis full_case parallel_case	// the next speed when we haven't talked to the down stream yet
+			7'b1??_????: xnext_default_speed = 7'b100_0000;
+			7'b01?_????: xnext_default_speed = 7'b010_0000;
+			7'b001_????: xnext_default_speed = 7'b001_0000;
+			7'b000_1???: xnext_default_speed = 7'b000_1000;
+			7'b000_01??: xnext_default_speed = 7'b000_0100;
+			7'b000_001?: xnext_default_speed = 7'b000_0010;
+			7'b000_0001: xnext_default_speed = 7'b000_0001;
+			7'b000_0000: begin xnext_default_speed = 7'b000_0010; xlast_default_speed = 1; end
+			endcase
+		end
+
+		assign speed = r_upstream_speed;
+		always @(posedge clk10 or negedge reset_n) 
+		if (!reset_n) begin
+			r_upstream_speed <= 7'b000_0010;
+			r_rcv_speed <= 7'bx;
+			r_next_speed <= 7'bx;
+			r_searching_down <= 0;
+		end else begin
+			r_upstream_speed <= c_upstream_speed;
+			r_rcv_speed <= c_rcv_speed;
+			r_next_speed <= c_next_speed;
+			r_searching_down <= c_searching_down;
+		end
+		assign prev_upstream_speed = r_upstream_speed;
+
+		assign next_upstream_speed = xnext_upstream_speed;
+		assign next_default_speed = xnext_default_speed;
+		assign prev_searching_down = r_searching_down;
+		assign is_max_speed = (valid_speeds&~r_upstream_speed) < r_upstream_speed;
+		assign last_speed = xlast_speed;
+		assign last_default_speed = xlast_default_speed;
+		assign first_upstream_speed = xfirst_upstream_speed;
+
+		//
+		//	this logic is to discover and timeout frequencies that are too high (ie hear nothing from the downstream)
+		//
+		reg [1:0]r_recycle;
+		always @(posedge clk10)
+		if (reset_recycle) begin
+			r_recycle <= 3;
+		end else
+		if (next_recycle) begin
+			r_recycle <= r_recycle-1;
+		end
+		assign last_recycle = r_recycle==0;
+	end else begin :down		// these stubs are for the downstream side
+		assign speed = 7'bx;
+		assign prev_next_speed = 0;
+		assign prev_upstream_speed = 0;
+		assign next_upstream_speed = 0;
+		assign next_default_speed = 0;
+		assign first_upstream_speed = 0;
+		assign prev_searching_down = 0;
+		assign prev_rcv_speed = 0;
+		assign is_max_speed=1;
+		assign last_speed = 1;
+		assign last_default_speed = 1;
+		assign last_recycle=0;
+	end
 
 	//
 	//	This section is implementation specific, it defines the 'prog' output that drives the output
@@ -187,7 +338,7 @@ module mgmt(input reset_n,
 	wire last_prog = r_xmt_prog == 10;
 
 	/* verilator lint_off UNUSEDSIGNAL */
-	wire [4:0]average_prog = {1'b0, r_rcv_max[3:0]}+{1'b0, r_rcv_min[3:0]};
+	wire [4:0]average_prog = {1'b0, r_xmt_max[3:0]}+{1'b0, r_xmt_min[3:0]};
 	/* verilator lint_on UNUSEDSIGNAL */
 
 	/* verilator lint_off CASEOVERLAP */
@@ -203,8 +354,8 @@ module mgmt(input reset_n,
 	/* verilator lint_on CASEOVERLAP */
 
 	//
+	//	transmit engine
 	//
-
 	always @(*) begin
 			case(r_xphase)
 			0: begin
@@ -216,7 +367,7 @@ module mgmt(input reset_n,
 				c_xmt_k = 1;
 			   end
 			2: begin
-				c_xmt_d = 8'h4A;	// 4A
+				c_xmt_d = 8'h5D;	// 5D
 				c_xmt_k = 0;
 			   end
 			3: begin
@@ -224,15 +375,15 @@ module mgmt(input reset_n,
 				c_xmt_k = 0;
 			   end
 			4: begin
-				c_xmt_d = r_xmt_min;	// 00
+				c_xmt_d = r_rcv_min;	// 00
 				c_xmt_k = 0;
 			   end
 			5: begin
-				c_xmt_d = r_xmt_max;	// 00
+				c_xmt_d = r_rcv_max;	// 00
 				c_xmt_k = 0;
 			   end
 			6: begin
-				c_xmt_d = {1'b0, (r_cmd==FREQ_SWITCHING? next_speed:default_speed)};	// speed
+				c_xmt_d = {1'b0, (UPSTREAM && r_cmd==FREQ_SWITCHING? prev_next_speed:default_speed)};	// speed
 				c_xmt_k = 0;
 			   end
 			7: begin
@@ -245,17 +396,28 @@ module mgmt(input reset_n,
 				c_xmt_ready = 0;
 			end else begin
 				c_xphase = r_xphase+1;
-				c_xmt_ready = !r_idle;
+				c_xmt_ready = !r_idle | (r_xmt_ready&&r_xphase != 7);
 			end
 	end
 
+
+	//
+	//	control state machine
+	//
+	//		r_rstate - receive state:
+	//
+	//		0: error recovery
+	//		1: reading data
+	//		2: XMT_RUNNING 
+	//		3: going online	
+	//
 	always @(*)
 	if (!reset_out_n) begin
 		c_rev = 1'b0;
-		c_rcount = 5'bx;
-		c_xcount = 5'bx;
+		c_rcount = 0;
+		c_xcount = 0;
 		c_rphase = 0;
-		c_state = 0;
+		c_rstate = 0;
 		c_rcv_min = 0;
 		c_rcv_max = 0;
 		c_xmt_min = 0;
@@ -269,11 +431,18 @@ module mgmt(input reset_n,
 		next_prog = 0;
 		choose_prog = 0;
 		c_idle = 0;
-		c_searching_down = r_searching_down;
+		c_searching_down = prev_searching_down;
 		c_rcv_speed = 7'bx;
 		c_restart = 0;
-		c_upstream_speed = r_upstream_speed;
+		c_upstream_speed = prev_upstream_speed;
+		c_next_speed = 7'bx;
+		c_xmt_cycles = MAX_CYCLES;
+		next_recycle = 0;
+		reset_recycle = 1;
+		c_last_cmd = START_UP;
 	end else  begin
+		next_recycle = 0;
+		reset_recycle = 0;
 		reset_prog = 0;
 		next_prog = 0;
 		choose_prog = 0;
@@ -281,107 +450,274 @@ module mgmt(input reset_n,
 		c_rcount = r_rcount;
 		c_xcount = r_xcount;
 		c_rphase = r_rphase;
-		c_state = r_state;
+		c_rstate = r_rstate;
 		c_rcv_min = r_rcv_min;
 		c_rcv_max = r_rcv_max;
-		c_xmt_min = r_rcv_min;
-		c_xmt_max = r_rcv_max;
+		c_xmt_min = r_xmt_min;
+		c_xmt_max = r_xmt_max;
 		c_cmd = r_cmd;
 		c_rcv_level = r_rcv_level;
 		c_reset_count = r_reset_count;
 		c_seen_prog = r_seen_prog;
-		c_idle = 0;
+		c_idle = r_idle;
 		c_xmt_speed = r_xmt_speed;
-		c_searching_down = r_searching_down;
-		c_rcv_speed = r_rcv_speed;
-		c_restart = r_restart;
-		c_upstream_speed = r_upstream_speed;
-		case (r_state)	// synthesis full_case
+		c_searching_down = prev_searching_down;
+		c_rcv_speed = prev_rcv_speed;
+		c_restart = 0;
+		c_upstream_speed = prev_upstream_speed;
+		c_next_speed = prev_next_speed;
+		c_xmt_cycles = r_xmt_cycles;
+		c_last_cmd = r_last_cmd;
+		//
+		//	this is the receive side state machine
+		//		we read 8 symbols - phase counts where we think we are in the message
+		//
+		case (r_rstate)	// synthesis full_case
 		0:	begin
+				c_reset_count = 0;
+				c_rcount = 0;
+				c_rphase = 1;
 				if (rcv_ready && rcv_k && rcv_out == 8'hbc) begin // COM?
-					c_state = 1;
-					c_rcount = 0;
-					c_rphase = 1;
-	
+					c_rstate = 1;
 				end	
 			end
-		1:	begin
+		1, 2, 3:	begin
 				if (rcv_ready) begin 
 					case (r_rphase)
-					0:	if (!rcv_k || rcv_out != 8'hbc) c_state = 0;
-					1:	if (!rcv_k || rcv_out != 8'hf7) c_state = 0;
-					2:	if (rcv_k || rcv_out != 8'h4A) begin
+					0:	if (!rcv_k || rcv_out != 8'hbc) c_rstate = 0;
+					1:	if (!rcv_k || rcv_out != 8'hf7) c_rstate = 0;
+					2:	if (rcv_k || rcv_out != 8'h5D) begin
 							if (!rcv_k)	c_rev = ~r_rev;
-							c_state = 0;
+							c_rstate = 0;
 						end
 					3:  if (rcv_k) begin
-							c_state = 0;
+							c_rstate = 0;
 						end else begin
 							if (r_rcv_level != rcv_out) begin
 								c_rcv_level = rcv_out;
-								c_reset_count = 1;
+								if (r_rcount != 0)
+									c_reset_count = 1;
 							end
 						end
 					4:  if (rcv_k) begin
-							c_state = 0;
+							c_rstate = 0;
 						end else begin
+							if (r_rcount == MAX_COUNT)
+								c_xmt_min = rcv_out;
 						end
 					5:	if (rcv_k) begin
-							c_state = 0;
+							c_rstate = 0;
 						end else begin
+							if (r_rcount == MAX_COUNT)
+								c_xmt_max = rcv_out;
 						end
 					6:  if (rcv_k) begin
-							c_state = 0;
+							c_rstate = 0;
 						end else begin
 							if (!rcv_out[7])
 								c_rcv_speed = rcv_out[6:0];
 						end
 					7:	if (rcv_k) begin
-							c_state = 0;
+							c_rstate = 0;
 						end else begin
-							if (r_rcount == 5'h1f) begin
-								if (r_rcv_min == 0 || r_rcv_level < r_rcv_min) begin
-									c_rcv_min = r_rcv_level;
+							c_last_cmd = rcv_out[2:0];
+							if (rcv_out[2:0] != r_last_cmd) begin
+								c_rcount = 0;
+							end else begin
+								c_rcount = (r_reset_count || r_rcount==MAX_COUNT?0:r_rcount+1);
+								if (r_rcount == MAX_COUNT) begin
+									if (r_rcv_min == 0 || r_rcv_level < r_rcv_min) begin
+										c_rcv_min = r_rcv_level;
+									end
+									if (r_rcv_max == 0 || r_rcv_level > r_rcv_max) begin
+										c_rcv_max = r_rcv_level;
+									end
 								end
-								if (r_rcv_max == 0 || r_rcv_level > r_rcv_max) begin
-									c_rcv_max = r_rcv_level;
-								end
+								case (rcv_out[2:0])	// synthesis full_case
+								START_UP:;
+	
+								XMT_RUNNING:if (r_rcount > 1) begin
+												c_rstate = 2;
+											end
+	
+								FREQ_SWITCHING:
+											begin
+												if (!UPSTREAM && r_rcount >= 1)
+													c_restart = 1;
+											end
+								ONLINE,	 
+								GO_ONLINE:	 if( r_rcount >= 1) begin
+												if (UPSTREAM)
+													c_idle = 1;
+												c_rstate = 3;
+											end
+								default:;
+								endcase
 							end
-							c_rcount = (r_reset_count?0:r_rcount+1);
 							c_reset_count = 0;
-							//if (rcv_out[2:0] == 
-						end 
+						end
+					
 					endcase
 					c_rphase = r_rphase+1;
 				end	
 			end
 		default:;
 		endcase
-		c_xcount = r_xcount+1;
-		case (r_xphase)
-		7:	begin
-				case (r_cmd)
-				START_UP:	begin
-								if (r_xcount == 31) begin
-									if (last_prog) begin
-										reset_prog = 1;
-										if (r_seen_prog) begin
-											c_cmd = XMT_RUNNING;
-											c_seen_prog = 0;
-										end else 
-										if (r_rcv_min != 0) begin
-											c_seen_prog = 1;
-										end
+		//
+		//	transmit controller, we only do stuff when active on the last beat of each message
+		//
+		if (!r_idle && r_xphase == 7) begin
+			c_xcount = r_xcount+1;
+			case (r_cmd)
+			START_UP:	begin
+								if (r_xcount == MAX_COUNT) begin
+									c_xcount = 0;
+									c_seen_prog = r_seen_prog||(r_xmt_cycles==0&&r_rcv_max!=0&& r_rcv_max!=0 && last_prog);
+									if (r_xmt_cycles != 0) begin
+										c_xmt_cycles = r_xmt_cycles-1;
 									end else begin
-										next_prog = 1;
+										c_xmt_cycles = MAX_CYCLES;
+										if (last_prog) begin
+											if (r_seen_prog) begin
+												//if (UPSTREAM) begin
+													//if (prev_searching_down || prev_upstream_speed==first_upstream_speed) begin
+												//		choose_prog = 1;
+												//		c_cmd = XMT_RUNNING;
+													//end else begin
+													//	choose_prog = 1;
+													//	c_cmd = FREQ_SWITCHING;
+													//	c_freq_switch = 1;
+													//	if (prev_rcv_speed == 0) begin
+													//		c_next_speed =  next_default_speed;
+													//	end else begin
+													//		if (prev_searching_down) begin
+													//			if (last_speed) begin
+													//				c_next_speed =  7'b000_0010; 
+													//				c_searching_down = 0;
+													//			end else begin
+													//				c_next_speed =  next_upstream_speed;
+													//				c_rcv_speed = 0;
+													//			end
+													//		end else begin
+													//			c_searching_down = 1;
+													//			c_next_speed =  first_upstream_speed;
+													//		end
+													//	end
+												//	end
+												//end else begin
+													choose_prog = 1;
+													c_cmd = XMT_RUNNING;
+												//end
+											end else begin
+												reset_prog = 1;
+												if (UPSTREAM) begin
+													if (last_recycle) begin
+														c_cmd = FREQ_SWITCHING;
+														if (prev_searching_down) begin
+															if (last_speed) begin
+																	c_next_speed =  7'b000_0010; 
+																	c_searching_down = 0;
+															end else begin
+																	c_next_speed =  next_upstream_speed;
+																	c_rcv_speed = 0;
+															end
+														end else begin
+															c_searching_down = 1;
+															c_next_speed =  first_upstream_speed;
+														end
+													end else begin
+														next_recycle = 1;
+													end
+												end
+											end
+										end else begin
+											next_prog = 1;
+										end
 									end
 								end
-							end
-				default:;
-				endcase
-			end
-		default:;
-		endcase
+						end	
+			XMT_RUNNING:begin
+								if (r_xcount == MAX_COUNT) begin
+									c_xcount = 0;
+									if (r_xmt_cycles == 0) begin
+										c_xmt_cycles = MAX_CYCLES;
+										if (UPSTREAM) begin
+											if (last_recycle) begin
+												if (prev_searching_down || prev_upstream_speed==first_upstream_speed) begin
+													if (r_rstate >= 2)
+														c_cmd = GO_ONLINE;
+												end else begin
+													c_cmd = FREQ_SWITCHING;
+													if (prev_rcv_speed == 0) begin
+														c_next_speed =  next_default_speed;
+													end else begin
+														if (prev_searching_down) begin
+															if (last_speed) begin
+																c_next_speed =  7'b000_0010; 
+																c_searching_down = 0;
+															end else begin
+																c_next_speed =  next_upstream_speed;
+																c_rcv_speed = 0;
+															end
+														end else begin
+															c_searching_down = 1;
+															c_next_speed =  first_upstream_speed;
+														end
+													end
+												end
+											end else begin
+												next_recycle = 1;
+											end
+										end else begin
+											if (r_rstate == 3) begin
+												c_cmd = ONLINE;
+											end
+										end
+									end else begin
+										c_xmt_cycles = r_xmt_cycles-1;;
+									end
+								end
+						end	
+			GO_ONLINE,
+			ONLINE:		begin
+								if (r_xcount == 7 && r_rstate >= 2) begin
+									c_xcount = 0;
+									if (UPSTREAM) begin
+										if (r_cmd == ONLINE)
+											c_idle = 1;
+										if (r_rstate == 3)
+											c_cmd = ONLINE;
+									end else begin
+										if (r_cmd == ONLINE)
+											c_idle = 1;
+										c_cmd = ONLINE;
+									end
+								end
+						end
+			FREQ_SWITCHING:begin
+								if (UPSTREAM && r_xcount == 7) begin
+									c_restart = 1;
+									c_upstream_speed = prev_next_speed;
+								end
+						end
+			default:;
+			endcase
+		end
+		if (c_restart) begin
+			c_cmd = START_UP;
+			c_rcv_min = 0;
+			c_rcv_max = 0;
+			c_xmt_min = 0;
+			c_xmt_max = 0;
+			c_rcv_level = 0;
+			c_xmt_cycles = MAX_CYCLES;
+			c_xcount = 0;
+			c_rstate = 0;
+			c_seen_prog = 0;
+			reset_prog = 1;
+			reset_recycle = 1;
+			c_last_cmd = START_UP;
+		end
 	end
 
 	always @(posedge clk10) begin
@@ -393,7 +729,7 @@ module mgmt(input reset_n,
 		r_xcount <= c_xcount;
 		r_rphase <= c_rphase;
 		r_xphase <= c_xphase;
-		r_state <= c_state;
+		r_rstate <= c_rstate;
 		r_rcv_min <= c_rcv_min;
 		r_rcv_max <= c_rcv_max;
 		r_xmt_min <= c_xmt_min;
@@ -404,7 +740,8 @@ module mgmt(input reset_n,
 		r_seen_prog <= c_seen_prog;
 		r_idle <= c_idle;
 		r_xmt_speed <= c_xmt_speed;
-		r_rcv_speed <= c_rcv_speed;
+		r_xmt_cycles <= c_xmt_cycles;
+		r_last_cmd <= c_last_cmd;
 	end
 
 	//
@@ -413,16 +750,13 @@ module mgmt(input reset_n,
 	/* verilator lint_off SYNCASYNCNET */
 	always @(posedge clk10 or negedge reset_n) 
 	if (!reset_n) begin
-		r_upstream_speed <= default_speed;
-		r_searching_down <= 0;
-		r_restart <= 1;
+		r_restart <= 0;
 	end else begin
-		r_upstream_speed <= c_upstream_speed;
-		r_searching_down <= c_searching_down;
 		r_restart <= c_restart;
 	end
 	/* verilator lint_on SYNCASYNCNET */
 
+	endgenerate
 
 endmodule
 /* For Emacs:
