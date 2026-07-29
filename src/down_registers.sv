@@ -344,9 +344,11 @@ module down_registers(input reset_n, input clk10,
 				c_xdata = 8'bx;
 				c_write_back = 0;
 				c_addr_size = 1'bx;
+				c_read = 0;
 			end else begin
 				abort_read = 0;
 				start_read = 0;
+				c_state = r_state;
 				c_read = r_read;
 				c_addressed = r_addressed;
 				c_xaddr = r_xaddr;
