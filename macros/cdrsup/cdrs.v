@@ -78,20 +78,20 @@ module cdrs(
 	// input symbols
 
 	reg [9:0]r_in_p;	// symbol on pos edges
-	reg [5:0]r_in_n;	// symbol on neg edges
-	reg      r_in_x;	// posedge copy if negedge symbol for PD
+	reg      r_in_n;	// symbol on neg edges
+	reg [5:0]r_in_n_i;	// pos edge version of r_in_n	- keep all this in the posedge domain to give us more setup
 
 	always @(posedge CLKI) begin
-		r_in_x <= r_in_n[0];
 		r_in_p <= {r_in_p[8:0], ddin};
+		r_in_n_i <= {r_in_n_i[4:0], r_in_n};
 	end
 	always @(posedge CLKI_N) 
-		r_in_n <= {r_in_n[4:0], ddin};
+		r_in_n <=  ddin;
 
 	// Phase detector - bang-bang stationkeeping
 
-	wire X1 = r_in_p[0]^r_in_x;
-	wire X2 = r_in_p[1]^r_in_x;
+	wire X1 = r_in_p[0]^r_in_n_i[0];
+	wire X2 = r_in_p[1]^r_in_n_i[0];
 
 	reg r_slow, r_last;
 	wire sup  =X2&locked;
@@ -159,18 +159,36 @@ module cdrs(
 	always @(posedge CLKQ_N)
 		r_qdn <= {r_qdn[0],ddin};
 
-	wire too_low =	( r_qdn[1] &!r_in_p[0]& r_qdp ) ||		// too slow?
-					(!r_qdn[1] & r_in_p[0]&!r_qdp ) ||
-					(!r_in_p[0]& r_qdp    &!r_in_n[0]) ||
-					( r_in_p[0]&!r_qdp    & r_in_n[0]) ||
-					(!r_in_p[0]& r_qdp    &!r_in_n[0]) ||
-					( r_qdp    &!r_in_n[0]& r_qdn[0]) ||
-					(!r_qdp    & r_in_n[0]&!r_qdn[0]) ||
-					( r_in_n[0]&!r_qdn[0] & ddin) ||
-					(!r_in_n[0]& r_qdn[0] &!ddin);
+	reg [1:0]r_qdn_i;
+	reg      r_qdp_i;
+	always @(posedge CLKI) begin
+		r_qdn_i[1] <= r_qdn_i[1];
+		r_qdn_i[0] <= r_qdn[0];
+		r_qdp_i <= r_qdp;
+		//r_in_x <= r_in_n[0];
+		//r_in_p[1] <= r_in_p[0];
+		//r_in_p[0] <= din;
+	end
+
+	wire too_low =	( r_qdn_i[1] &!r_in_p[1] & r_qdp_i ) ||		// too slow?
+					(!r_qdn_i[1] & r_in_p[1] &!r_qdp_i ) ||
+					(!r_in_p[1]  & r_qdp_i   &!r_in_n_i[0]  ) ||
+					( r_in_p[1]  &!r_qdp_i   & r_in_n_i[0]  ) ||
+					( r_qdp_i    &!r_in_n_i[0]    & r_qdn_i[0]) ||
+					(!r_qdp_i    & r_in_n_i[0]    &!r_qdn_i[0]) ||
+					( r_in_n_i[0]    &!r_qdn_i[0] & r_in_p[0]) ||
+					(!r_in_n_i[0]    & r_qdn_i[0] &!r_in_p[0]);
+	//wire too_low =	( r_qdn[1] &!r_in_p[0]& r_qdp ) ||		// too slow?
+	//				(!r_qdn[1] & r_in_p[0]&!r_qdp ) ||
+	//				(!r_in_p[0]& r_qdp    &!r_in_n[0]) ||
+	//				( r_in_p[0]&!r_qdp    & r_in_n[0]) ||
+	//				( r_qdp    &!r_in_n[0]& r_qdn[0]) ||
+	//				(!r_qdp    & r_in_n[0]&!r_qdn[0]) ||
+	//				( r_in_n[0]&!r_qdn[0] & ddin) ||
+	//				(!r_in_n[0]& r_qdn[0] &!ddin);
 	
-	wire too_high =	( &r_in_p[5:0] && &r_in_n[5:1]) ||
-					(~|r_in_p[5:0]&& ~|r_in_n[5:1]); // 6 1s/0s in a row -  too fast
+	wire too_high =	( &r_in_p[5:0] && &r_in_n_i[5:1]) ||
+					(~|r_in_p[5:0]&& ~|r_in_n_i[5:1]); // 6 1s/0s in a row -  too fast
 
 	wire match = r_in_p == hdr || r_in_p == ~hdr;
 	

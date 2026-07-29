@@ -2,10 +2,12 @@
 .idea
 *.vcd
 *.fst
+*.sav
 *.fst.hier
 runs
 tt
 tt_submission
+rtltest/test
 src/user_config.json
 src/config_merged.json
 test/sim_build
