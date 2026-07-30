@@ -76,7 +76,7 @@ module test;
 		uio_in[3] <=  ~uio_in[3];
 		@(posedge uio_out[5]);
 		uio_in[0] <= 0;
-		ui_in <= {1'b0, 3'b1, 4'b0};						
+		ui_in <= {1'b1, 3'b1, 4'b0};						
 		uio_in[3] <=  ~uio_in[3];
 		@(posedge uio_out[5]);
 		uio_in[0] <= 0;
@@ -99,6 +99,7 @@ module test;
 		while (!uio_out[2])
 			@(posedge uio_out[5]);
 		while (uio_out[1]) begin	// skip begin/end symbols
+			@(posedge uio_out[5]);
 			while (!uio_out[2])
 				@(posedge uio_out[5]);
 		end
@@ -151,7 +152,7 @@ module test;
 		uio_in[3] <=  ~uio_in[3];
 		@(posedge uio_out[5]);
 		uio_in[0] <= 0;
-		ui_in <= {1'b0, 3'b1, 4'b0};						
+		ui_in <= {1'b1, 3'b1, 4'b0};						
 		uio_in[3] <=  ~uio_in[3];
 		@(posedge uio_out[5]);
 		uio_in[0] <= 0;
@@ -224,7 +225,7 @@ module test;
 			@(posedge uio_out[5]);
 			@(posedge uio_out[5]);
 			write_reg(7, 8'h10, 0);	// set address to 0
-			write_reg2(0, 16'b100, 8'h55);	// write 55 to per-device register
+			write_reg2(0, 16'h100, 8'h55);	// write 55 to per-device register
 			read_reg(0, 0, r);
 			$display("%c", r);
 			read_reg(0, 1, r);

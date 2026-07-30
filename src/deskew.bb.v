@@ -20,12 +20,14 @@ module deskew(
 	input DIN,
 	input REV,
 
-	input [9:0]DO,
+    input      DO0, input DO1, input DO2, input DO3, input DO4,
+    input      DO5, input DO6, input DO7, input DO8, input DO9,
 	input      XMT_READY,
 	input	   XMT_RD,
 
 	output	    CLK10,	// divide by 10 interface
-	output [9:0]DI,
+    output      DI0, output DI1, output DI2, output DI3, output DI4,
+    output      DI5, output DI6, output DI7, output DI8, output DI9,
 	output      SYNCED, 
 	output      SYNCING,
 	output      RESET_OUT_N,

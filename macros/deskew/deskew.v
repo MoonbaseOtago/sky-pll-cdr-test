@@ -191,12 +191,14 @@ module deskew(
 	input DIN,
 	input REV,
 
-	input [9:0]DO,
+	input      DO0, input DO1, input DO2, input DO3, input DO4,
+	input	   DO5, input DO6, input DO7, input DO8, input DO9,
 	input      XMT_READY,
 	input	   XMT_RD,
 
 	output	    CLK10,	// divide by 10 interface
-	output [9:0]DI,
+	output      DI0, output DI1, output DI2, output DI3, output DI4,
+	output	    DI5, output DI6, output DI7, output DI8, output DI9,
 	output      SYNCED, 
 	output      SYNCING,
 	output      RESET_OUT_N,
@@ -214,6 +216,9 @@ module deskew(
 `endif
 		);
 `endif
+	wire [9:0]DO = {DO9, DO8, DO7, DO6, DO5, DO4, DO3, DO2, DO1, DO0};
+	wire [9:0]DI;
+	assign {DI9, DI8, DI7, DI6, DI5, DI4, DI3, DI2, DI1, DI0} = DI;
 
 	// first fixed symbol - this or its inverse
 	wire[9:0]hdr = 10'b0011111010;

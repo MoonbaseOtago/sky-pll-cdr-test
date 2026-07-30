@@ -72,7 +72,7 @@ module down_registers(input reset_n, input clk10,
 			//				2: addr N bytes data 2 bytes  data
 			//				3: addr N bytes data 4 bytes  data
 			//				4: addr N bytes data 8 bytes  data
-			//				4: addr N bytes data 6 bytes  data
+			//				4: addr N bytes data 16 bytes  data
 			//				6: addr N bytes data terminated by symbol data
 			//				7: next byte gives lengths
 			//
@@ -169,7 +169,7 @@ module down_registers(input reset_n, input clk10,
 			//	0x11		command
 			//				7:	reset						asserted resets the chip
 			//				6:	bus reset					asserted cause a quick_bus reset
-			//				2:0	default address length		defaults to 4 on reset
+			//				3:0	default address length		defaults to 4 on reset
 			//	0x12		status		writing 1 to a bit here clears the bit, writing a 0 is ignored
 			//				0:	error seen					
 			//
