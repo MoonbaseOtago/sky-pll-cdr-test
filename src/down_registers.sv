@@ -67,7 +67,7 @@ module down_registers(input reset_n, input clk10,
 			//			0:	1=read/0=write
 			//
 			//		lengths:
-			//				0: addr 1 byte  data 2 bytes cmd
+			//				0: addr 1 byte  data 1 byte   cmd
 			//				1: addr N bytes data 1 bytes  data
 			//				2: addr N bytes data 2 bytes  data
 			//				3: addr N bytes data 4 bytes  data
@@ -193,15 +193,24 @@ module down_registers(input reset_n, input clk10,
 			reg		 r_write_back, c_write_back;
 		
 
-			reg	[2:0]r_addr;
-			reg		 r_addr_not_enabled;
-			always @(posedge clk10)
-			if (!reset_n) begin
-				r_addr_not_enabled <= 1;
-			end else
-			if (r_write_back && r_xaddr == 9'h10) begin
-				r_addr_not_enabled <= r_xaddr[7];
-				r_addr <= r_xaddr[2:0];
+			reg	[2:0]r_addr, c_addr;
+			reg		 r_addr_not_enabled, c_addr_not_enabled;
+			always @(posedge clk10) begin
+				r_addr <= c_addr;
+				r_addr_not_enabled <= c_addr_not_enabled;
+			end
+
+			always @(*) begin
+				c_addr = r_addr;
+				c_addr_not_enabled = r_addr_not_enabled;
+				if (!reset_n) begin
+					c_addr_not_enabled = 1;
+					c_addr = 3'bx;
+				end else
+				if (r_write_back && r_xaddr == 9'h10) begin
+					c_addr_not_enabled = r_xaddr[7];
+					c_addr = r_xaddr[2:0];
+				end
 			end
 
 			
@@ -360,8 +369,8 @@ module down_registers(input reset_n, input clk10,
 				SEARCHING:	if (mgmt_ok && rcv_k && (rcv_out == START || rcv_out == END))
 								c_state = BYTE_0;
 				BYTE_0:		begin
-								c_addressed = r_addr_not_enabled?(rcv_out[7:5] == 7 && daisy_chain):
-															     (rcv_out[7:5] == r_addr);
+								c_addressed = c_addr_not_enabled?(rcv_out[7:5] == 7 && daisy_chain):
+															     (rcv_out[7:5] == c_addr);
 								if (rcv_k) begin
 									if (rcv_out == START || rcv_out == END) begin
 										c_state = BYTE_0;
@@ -377,6 +386,7 @@ module down_registers(input reset_n, input clk10,
 								7: c_state = BYTE_1;
 								default c_state = ERR;
 								endcase
+								c_addr_size = 0;
 								c_read = rcv_out[0];
 							end
 				BYTE_1:		if (rcv_k) begin
@@ -397,7 +407,7 @@ module down_registers(input reset_n, input clk10,
 									start_read = r_addressed;
 									c_state = BYTE_0;
 								end else begin
-									c_state = (r_addressed? ADDR_1:DATA_0);
+									c_state = (r_addr_size? ADDR_1:DATA_0);
 								end
 							end
 				ADDR_1:		if (rcv_k) begin
@@ -421,6 +431,7 @@ module down_registers(input reset_n, input clk10,
 				
 				ERR:		begin
 								abort_read = r_addressed;
+								c_state = BYTE_0;
 							end
 								
 				default:;

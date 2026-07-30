@@ -52,7 +52,7 @@ module tt_um_quick_bus (
 	reg		  r_force_rev;
 
 
-	wire tmp = (|uio_in[4:1]) | ena;	// to keep lint happy
+	wire tmp = (|uio_in[5:4]) | (|uio_in[2:1]) | ena;	// to keep lint happy
 
 
 
@@ -107,18 +107,18 @@ module tt_um_quick_bus (
 	case (mode)	// synthesis full_case parallel_case
 	0:	begin		// mostly PLL test
 			ruo_out = {pll_clk, clk_up, clk_down, 1'b0, r_pll_counter};
-			ruio_oe = 8'b0001_1111;
-			ruio_out = {tmp, 3'b0,  down_mgmt_ok, up_mgmt_ok, down_reset_n, up_reset_n};
+			ruio_oe = 8'b0011_1111;
+			ruio_out = {tmp, 1'b0,  clk_up, clk_down, down_mgmt_ok, up_mgmt_ok, down_reset_n, up_reset_n};
 		end
 	1,3:	begin
 			ruo_out = up_rcv_out;
-			ruio_oe = 8'b0001_1110;
-			ruio_out = {tmp, 2'b0,  clk_up, clk_down, up_rcv_ready, up_rcv_k, 1'b0};
+			ruio_oe = 8'b0011_0110;
+			ruio_out = {tmp, 1'b0,  clk_up, clk_down, 1'b0, up_rcv_ready, up_rcv_k, 1'b0};
 		end
 	2:	begin
 			ruo_out = down_rcv_out;
-			ruio_oe = 8'b0001_1110;
-			ruio_out = {tmp, 2'b0,  clk_up, clk_down, down_rcv_ready, down_rcv_k, 1'b0};
+			ruio_oe = 8'b0011_0110;
+			ruio_out = {tmp, 1'b0,  clk_up, clk_down, 1'b0, down_rcv_ready, down_rcv_k, 1'b0};
 		end
 	default:
 		begin
@@ -128,24 +128,29 @@ module tt_um_quick_bus (
 		end
 	endcase
 
-	reg [7:0]r_in_data;
-	reg      r_in_k;
-	always @(posedge clk) begin
-		r_in_data <= ui_in;
-		r_in_k <= uio_in[0];
+	reg [7:0]r_up_data;
+	reg      r_up_k;
+	always @(posedge clk_up) begin
+		r_up_data <= ui_in;
+		r_up_k <= uio_in[0];
 	end
 
-	reg r_up_last, r_up_xmt_ready, r_up_next;
-	reg r_down_last, r_down_xmt_ready, r_down_next;
+	reg [7:0]r_down_data;
+	reg      r_down_k;
+	always @(posedge clk_down) begin
+		r_down_data <= ui_in;
+		r_down_k <= uio_in[0];
+	end
+
+	reg r_up_last, r_up_xmt_ready;
+	reg r_down_last, r_down_xmt_ready;
 	always @(posedge clk_up) 
 	if (!rst_n) begin
-		r_up_next <= 0;
 		r_up_last <= 0;
 		r_up_xmt_ready <= 0;
 	end else  begin
-		r_up_last <= r_up_next;
-		r_up_next <= uio_in[5];
-		if (mode >= 2 && r_up_last != r_up_next) begin
+		r_up_last <= uio_in[3];
+		if (mode >= 2 && r_up_last !=uio_in[3]) begin
 			r_up_xmt_ready <= 1;
 		end else begin
 			r_up_xmt_ready <= 0;
@@ -155,12 +160,10 @@ module tt_um_quick_bus (
 	always @(posedge clk_down) 
 	if (!rst_n) begin
 		r_down_last <= 0;
-		r_down_next <= 0;
 		r_down_xmt_ready <= 0;
 	end else begin
-		r_down_last <= r_down_next;
-		r_down_next <= uio_in[5];
-		if (mode == 1 && r_down_last != r_down_next) begin
+		r_down_last <= uio_in[3];
+		if (mode == 1 && r_down_last != uio_in[3]) begin
 			r_down_xmt_ready <= 1;
 		end else begin
 			r_down_xmt_ready <= 0;
@@ -203,8 +206,8 @@ module tt_um_quick_bus (
             .rcv_ready(up_rcv_ready),
             .rcv_align(up_rcv_align),
 
-            .xmt_in(r_in_data),
-            .xmt_k(r_in_k),
+            .xmt_in(r_up_data),
+            .xmt_k(r_up_k),
             .xmt_ready(r_up_xmt_ready)
             );
 
@@ -239,8 +242,8 @@ module tt_um_quick_bus (
             .rcv_ready(down_rcv_ready),
             .rcv_align(down_rcv_align),
 
-            .xmt_in(r_test==3?down_reg_in:(r_test==2?r_rr:r_in_data)),
-            .xmt_k(r_test==3?down_reg_k:(r_test==2?1'b0:r_in_k)),
+            .xmt_in(r_test==3?down_reg_in:(r_test==2?r_rr:r_down_data)),
+            .xmt_k(r_test==3?down_reg_k:(r_test==2?1'b0:r_down_k)),
             .xmt_ready(r_test==3?down_reg_ready:(r_test==2?down_mgmt_ok:r_down_xmt_ready))
             );
 

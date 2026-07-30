@@ -606,8 +606,8 @@ module up_ser8b10(input CLK10, input RESET_OUT_N,
 		endcase
 	end
 
-	assign lfsr_reset = (r_reset || (r_k && r_in == 8'hbc));	   		// COM
-	assign lfsr_shift = (r_reset || ((!(r_k && r_in == 8'h1c)||!ready)));	// SKP
+	assign lfsr_reset = (r_reset || (r_k && r_in == 8'hbc && r_ready));		// COM
+	assign lfsr_shift = (r_reset || ((!(r_k && r_in == 8'h1c)&&r_ready)));	// SKP
 
 	
 endmodule

@@ -51,7 +51,7 @@ module down_des8b10(input RESET_OUT_N,
 		r_ready <= 0;
 		r_align <= 0;
 	end else begin
-		r_ready <= !k || kd != 8'h1c;	// eat skip
+		r_ready <= (!k || kd != 8'h1c);	// eat skip
 		r_align <= k?kend:err;
 	end
 

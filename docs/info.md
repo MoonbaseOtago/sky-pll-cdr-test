@@ -7,7 +7,7 @@ hopefully up to 350MHz.
 
 QuickBus is a prototype on-board chip to chip bus, think of it as SPI but up to 100 times faster - it's
 a 4-wire bus 2 bits each way with LVDS signalling. In this case the upstream and downstream are both in the
-same TT tile, no actual LVDS but full speed data tests.
+same TT tile, no actual LVDS but full speed data tests, and tests for handling swapped LVDS pins.
 
 ## How the PLL works
 
@@ -192,9 +192,11 @@ is running:
 I/O mode 0:
 
 - uo\_out[7] - pll\_clk
-- uo\_out[6] - upstream 1/10 clk
-- uo\_out[5] - downstream 1/10 clk
+- uo\_out[5] - upstream 1/10 clk
+- uo\_out[4] - downstream 1/10 clk
 - uo\_out[3:0] - counter clocked by pll\_clk
+- uio\_out[5] - upstream 1/10 clk
+- uio\_out[4] - downstream 1/10 clk
 - uio\_out[3] - down\_mgmt\_ok - downstream link management is done
 - uio\_out[2] - up\_mgmt\_ok - upstream link management is done
 - uio\_out[1] - down\_reset\_n - downstream generated reset
@@ -222,9 +224,9 @@ For the last 3 modes:
 - uio\_in[0] - k in
 - uio\_out[1] - k out
 - uio\_out[2] - in data ready
-- uio\_out[3] - downstream clock
-- uio\_out[4] - upstream clock
-- uio\_in[5] - out ready (see below)
+- uio\_in[3] - out ready (see below)
+- uio\_out[4] - downstream clock
+- uio\_out[5] - upstream clock
 
 Out ready is used to signal that new data is available, it's signaled by uio\_in[5] being inverted from its previous state (so that it can be done manually from the TT test board)
 

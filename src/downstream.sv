@@ -89,7 +89,7 @@ module downstream(input reset_n,
     wire      scramble = 1;
 	wire	  mgmt_ready;
 	wire	  local_rcv_ready;
-	assign	  rcv_ready = mgmt_ready&local_rcv_ready;
+	assign	  rcv_ready = mgmt_ok&local_rcv_ready;
     down_des8b10    des(.CLK10(clk10), .RESET_OUT_N(reset_out_n), .DI(DI), .SYNCING(SYNCING),
                     .scramble(scramble),
                     .kout(rcv_k),

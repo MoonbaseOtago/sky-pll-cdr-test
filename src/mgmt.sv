@@ -160,7 +160,8 @@ module mgmt(input reset_n,
 	reg	[4:0]r_xmt_cycles, c_xmt_cycles;
 	reg      r_reset_count, c_reset_count;
 	reg	     r_seen_prog, c_seen_prog;
-	reg		 r_idle, c_idle;
+	reg		 r_idle, c_idle;					// conected state
+	reg		 r_almost_idle, c_almost_idle;		// disable sending messages as we get close
 	assign mgmt_ok = r_idle;
 	reg [2:0]r_cmd, c_cmd;
 
@@ -172,7 +173,6 @@ module mgmt(input reset_n,
 	reg [6:0]c_next_speed;
 	reg	     c_searching_down;
 	wire	 prev_searching_down;
-	wire	is_max_speed;
 	wire [6:0]next_upstream_speed, next_default_speed, first_upstream_speed;
 	wire	last_speed, last_default_speed;
 	wire last_recycle;
@@ -272,7 +272,6 @@ module mgmt(input reset_n,
 		assign next_upstream_speed = xnext_upstream_speed;
 		assign next_default_speed = xnext_default_speed;
 		assign prev_searching_down = r_searching_down;
-		assign is_max_speed = (valid_speeds&~r_upstream_speed) < r_upstream_speed;
 		assign last_speed = xlast_speed;
 		assign last_default_speed = xlast_default_speed;
 		assign first_upstream_speed = xfirst_upstream_speed;
@@ -298,7 +297,6 @@ module mgmt(input reset_n,
 		assign first_upstream_speed = 0;
 		assign prev_searching_down = 0;
 		assign prev_rcv_speed = 0;
-		assign is_max_speed=1;
 		assign last_speed = 1;
 		assign last_default_speed = 1;
 		assign last_recycle=0;
@@ -396,7 +394,7 @@ module mgmt(input reset_n,
 				c_xmt_ready = 0;
 			end else begin
 				c_xphase = r_xphase+1;
-				c_xmt_ready = !r_idle | (r_xmt_ready&&r_xphase != 7);
+				c_xmt_ready = (!r_idle&!r_almost_idle) | (r_xmt_ready&&r_xphase != 7);
 			end
 	end
 
@@ -440,6 +438,7 @@ module mgmt(input reset_n,
 		next_recycle = 0;
 		reset_recycle = 1;
 		c_last_cmd = START_UP;
+		c_almost_idle = 0;
 	end else  begin
 		next_recycle = 0;
 		reset_recycle = 0;
@@ -468,6 +467,7 @@ module mgmt(input reset_n,
 		c_next_speed = prev_next_speed;
 		c_xmt_cycles = r_xmt_cycles;
 		c_last_cmd = r_last_cmd;
+		c_almost_idle = r_almost_idle;
 		//
 		//	this is the receive side state machine
 		//		we read 8 symbols - phase counts where we think we are in the message
@@ -548,7 +548,7 @@ module mgmt(input reset_n,
 								ONLINE,	 
 								GO_ONLINE:	 if( r_rcount >= 1) begin
 												if (UPSTREAM)
-													c_idle = 1;
+													c_almost_idle = 1;
 												c_rstate = 3;
 											end
 								default:;
@@ -678,15 +678,24 @@ module mgmt(input reset_n,
 									end
 								end
 						end	
-			GO_ONLINE,
-			ONLINE:		begin
+			GO_ONLINE:	begin
 								if (r_xcount == 7 && r_rstate >= 2) begin
 									c_xcount = 0;
 									if (UPSTREAM) begin
-										if (r_cmd == ONLINE)
-											c_idle = 1;
 										if (r_rstate == 3)
 											c_cmd = ONLINE;
+									end else begin
+										if (r_cmd == ONLINE)
+											c_idle = 1;
+										c_cmd = ONLINE;
+									end
+								end
+						end
+			ONLINE:		begin
+								if (r_xcount == 31 && (r_rstate >=2 || r_almost_idle)) begin
+									c_xcount = 0;
+									if (UPSTREAM) begin
+										c_idle = 1;
 									end else begin
 										if (r_cmd == ONLINE)
 											c_idle = 1;
@@ -717,6 +726,8 @@ module mgmt(input reset_n,
 			reset_prog = 1;
 			reset_recycle = 1;
 			c_last_cmd = START_UP;
+			c_idle = 0;
+			c_almost_idle = 0;
 		end
 	end
 
@@ -739,6 +750,7 @@ module mgmt(input reset_n,
 		r_cmd <= c_cmd;
 		r_seen_prog <= c_seen_prog;
 		r_idle <= c_idle;
+		r_almost_idle <= c_almost_idle;
 		r_xmt_speed <= c_xmt_speed;
 		r_xmt_cycles <= c_xmt_cycles;
 		r_last_cmd <= c_last_cmd;

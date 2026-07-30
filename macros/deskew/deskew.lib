@@ -47,6 +47,10 @@ library (deskew) {
       voltage_name : "VGND";
       pg_type : "primary_ground";
     }
+    pin (DO[9:0]) {
+      direction : "input";
+      capacitance : 5.0;
+    }
     pin (CLK) {
       direction : "input";
       capacitance : 5.0;
@@ -72,10 +76,6 @@ library (deskew) {
       capacitance : 5.0;
     }
     pin (XMT_RD) {
-      direction : "input";
-      capacitance : 5.0;
-    }
-    pin (DO[9:0]) {
       direction : "input";
       capacitance : 5.0;
     }
