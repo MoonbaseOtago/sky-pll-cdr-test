@@ -220,6 +220,9 @@ module down_registers(input reset_n, input clk10,
 				r_ddd <= r_xdata;
 			end
 
+			// write a 1 to bit 0 triggers an upstream burst - this is not a standard register protocol thing, more something for testing QB
+			wire trigger_burst = r_write_back && r_xaddr == 9'h101 && r_xdata[0];
+
 			reg		 r_reset;
 			always @(posedge clk10)
 			if (!reset_n) begin
@@ -231,16 +234,18 @@ module down_registers(input reset_n, input clk10,
 				r_reset <= 0;
 			end
 
-			reg send_start, send_starta, send_end, send_zero;
+			reg [15:0]r_burst_count, c_burst_count;
+			reg send_start, send_starta, send_end, send_zero, send_burst;
 			always @(*) begin
 				c_k = send_start|send_starta|send_end;
 /* verilator lint_off CASEOVERLAP */
-				casez ({send_zero, send_start, send_starta, send_end}) // synthesis full_case parallel_case
-				4'b1???:	c_d = 0;
-				4'b?1??:	c_d = START;
-				4'b??1?:	c_d = STARTA;
-				4'b???1:	c_d = END;
-				4'b0000:
+				casez ({send_burst, send_zero, send_start, send_starta, send_end}) // synthesis full_case parallel_case
+				5'b1????:	c_d = r_burst_count[7:0];
+				5'b?1???:	c_d = 0;
+				5'b??1??:	c_d = START;
+				5'b???1?:	c_d = STARTA;
+				5'b????1:	c_d = END;
+				5'b00000:
 					case(r_xaddr)
 					9'h00:		c_d = 8'h50;
 					9'h01:		c_d = 8'h61;
@@ -260,7 +265,7 @@ module down_registers(input reset_n, input clk10,
 /* verilator lint_on CASEOVERLAP */
 			end
 
-			reg [1:0]r_rstate, c_rstate;
+			reg [2:0]r_rstate, c_rstate;
 			reg	     r_abort_read, c_abort_read;
 
 			always @(*)
@@ -273,15 +278,19 @@ module down_registers(input reset_n, input clk10,
 				send_zero = 0;
 				c_req = 0;
 				c_abort_read = 0;
+				c_burst_count = 16'bx;
+				send_burst = 0;
 			end else begin
 				send_start = 0;
 				send_starta = 0;
 				send_end = 0;
 				send_zero = 0;
+				send_burst = 0;
 				c_req = 0;
 				c_need_start = r_need_start;
 				c_rstate = r_rstate;
 				c_abort_read = r_abort_read|abort_read;
+				c_burst_count = r_burst_count;
 				case (r_rstate)
 				0:	if (r_need_start) begin
 							c_need_start = 0;
@@ -298,7 +307,12 @@ module down_registers(input reset_n, input clk10,
 						send_starta = 1;
 						c_rstate = 2;
 						c_abort_read = 0;
+					end else
+					if (trigger_burst) begin
+						c_rstate = 4;
+						c_burst_count = 0;
 					end
+				
 				1:  begin
 						c_req = 1;
 						c_rstate = 0;
@@ -313,6 +327,14 @@ module down_registers(input reset_n, input clk10,
 						send_end = 1;
 						c_rstate = 0;
 					end
+				4:  begin
+						c_req = 1;
+						if ((&r_burst_count))
+							c_rstate = 3;
+						send_burst = 1;
+						c_burst_count = r_burst_count+1;
+					end
+				default:;
 				endcase
 			end
 
@@ -323,6 +345,7 @@ module down_registers(input reset_n, input clk10,
 				r_k <= c_k;
 				r_d <= c_d;
 				r_abort_read <= c_abort_read;
+				r_burst_count <= c_burst_count;
 			end
 
 			//

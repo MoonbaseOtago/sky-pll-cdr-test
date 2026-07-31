@@ -14,11 +14,11 @@ create_clock [ get_ports "clk" ]  -name rp2040_clk -period $::env(CLOCK_PERIOD)
 set_clock_uncertainty $::env(SYNTH_CLOCK_UNCERTAINTY) [ get_clocks rp2040_clk ]
 set_clock_transition $::env(SYNTH_CLOCK_TRANSITION) [ get_clocks rp2040_clk ]
 
-create_clock [ get_pins "up/deskew/CLK10" ]  -name clk_up -period 33
+create_clock [ get_pins "up.deskew/CLK10" ]  -name clk_up -period 33
 set_clock_uncertainty $::env(SYNTH_CLOCK_UNCERTAINTY) [ get_clocks clk_up ]
 set_clock_transition $::env(SYNTH_CLOCK_TRANSITION) [ get_clocks clk_up ]
 
-create_clock [ get_pins "down/cdrs/CLK10" ]  -name clk_down -period 33
+create_clock [ get_pins "down.cdrs/CLK10" ]  -name clk_down -period 33
 set_clock_uncertainty $::env(SYNTH_CLOCK_UNCERTAINTY) [ get_clocks clk_down ]
 set_clock_transition $::env(SYNTH_CLOCK_TRANSITION) [ get_clocks clk_down ]
 
@@ -32,7 +32,7 @@ set_load  $cap_load [ all_outputs ]
 set_timing_derate -early [ expr {1-$::env(SYNTH_TIMING_DERATE)} ]
 set_timing_derate -late [ expr {1+$::env(SYNTH_TIMING_DERATE)} ]
 
-set_false_path -to { "up.pll2.COUNT_*" }
+set_false_path -to { "up.pll2/COUNT_*" }
 
 
 # end

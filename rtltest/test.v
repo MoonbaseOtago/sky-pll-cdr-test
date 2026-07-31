@@ -166,9 +166,42 @@ module test;
 		read_data(r);
 	end
 	endtask
+	reg [31:0]burst_counter;
+	reg		  done;
+	task read_burst(input [2:0]c);
+	begin
+		burst_counter = 0;
+		done = 0;
+		write_reg2(0, 16'h101, 8'h01);	// trigger upstream burst 
+		while (!uio_out[2])
+			@(posedge uio_out[5]);
+		while (uio_out[1]) begin	// skip begin/end symbols
+			@(posedge uio_out[5]);
+			while (!uio_out[2])
+				@(posedge uio_out[5]);
+		end
+		// ignore tag
+		for (burst_counter = 0;burst_counter < 32'h10000 && !done; burst_counter=burst_counter+1) begin
+			@(posedge uio_out[5]);
+			while (!uio_out[2])
+				@(posedge uio_out[5]);
+			if (uio_out[1]) begin
+				$display("rcv k err");
+				done=1;
+			end else 
+			if (uo_out != burst_counter[7:0]) begin
+				$displayh("rcv d err",,uo_out,,burst_counter);
+				done=1;
+			end
+		end	
+		if (burst_counter == 32'h10000)
+			$display("burst OK");
+	end
+	endtask
 
 	localparam REG_TEST =1;
 	reg [7:0]r;
+	integer i;
 	initial begin
 		if (!REG_TEST) begin
 			// test for simple pll interface
@@ -236,32 +269,9 @@ module test;
 			$display("%c", r);
 			read_reg2(0, 16'h100, r);
 			$display("%h", r);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
-			@(posedge uio_out[5]);
+			write_reg2(0, 16'h101, 8'h01);	// trigger upstream burst 
+			for (i = 0; i < 66000; i=i+1)
+				@(posedge uio_out[5]);
 			$finish;
 		end
 		
