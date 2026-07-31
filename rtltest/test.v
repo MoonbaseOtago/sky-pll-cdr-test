@@ -269,7 +269,7 @@ module test;
 			$display("%c", r);
 			read_reg2(0, 16'h100, r);
 			$display("%h", r);
-			write_reg2(0, 16'h101, 8'h01);	// trigger upstream burst 
+			read_burst(0);	// trigger upstream burst 
 			for (i = 0; i < 66000; i=i+1)
 				@(posedge uio_out[5]);
 			$finish;

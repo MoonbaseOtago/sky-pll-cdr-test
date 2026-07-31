@@ -24,7 +24,9 @@ module tt_um_quick_bus (
 	wire	  up_mgmt_ok, down_mgmt_ok;
 	wire	  clk_up, clk_down;
 
+	/* verilator lint_off UNUSEDSIGNAL */
 	wire [6:0]speed;
+	/* verilator lint_on UNUSEDSIGNAL */
 	reg		  r_test_prog;
 	wire	  test_speed;
 	wire	  dis=speed[4]&test_speed;	// for this test fail at 300MHz
