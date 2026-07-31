@@ -147,7 +147,7 @@ to N devices while Downstream devices continue to need 2 pairs.
 
 This is a 2x2 TT tile.
 
-![TILE](tile.png)
+![TILE](diag5.png)
 
 The Upstream side consists of two macros (lower left hand side), the PLL mentioned above and a standard cell macro called "deskew" which contains all the logic that has to run at the full speed clock (2-300MHz).
 

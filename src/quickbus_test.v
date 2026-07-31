@@ -69,7 +69,7 @@ module tt_um_quick_bus (
 	always @(posedge clk)
 	if (!rst_n) begin
 		r_test <= ui_in[7:6];
-		r_test_prog = ui_in[5];
+		r_test_prog <= ui_in[5];
 		r_force_rev <= ui_in[4];
 		r_pll_count <= ui_in[3:0];
 	end
