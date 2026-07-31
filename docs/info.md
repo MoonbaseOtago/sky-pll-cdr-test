@@ -153,7 +153,7 @@ The Upstream side consists of two macros (lower left hand side), the PLL mention
 
 Deskew is sized to be the same width as the PLL and sits above it. Deskew contains the 1/10 clock generator and the output shift register,  it also contains a variable length delay chain (lots of buffers and a mux tree) and a bang-bang phase discriminator, this feed a variable length shift register to do symbol alignment to the 1/10 clock.
 
-The Downstream side also contains 2 macros, a Clock Data Recovery unit which consists of the charge pump from the PLL along with a modified 4 stage VCO that generates a quadrature clock signal,  ....
+The Downstream side also contains 2 macros, a Clock Data Recovery unit which consists of the charge pump from the PLL along with a modified 4 stage VCO that generates a quadrature clock signal, (upside down in the above image) ....
 ![CDR](cdr.png)
 ....and a standard cell macro called "CDRS" that contains logic to sync to the incoming frequency and a bang-bang phase detector for station keeping, it also contains the high freq portion of the 8b10 encoders/decoders and generates the 1/10 clock synchronized to the symbols in the received bit stream.
 
