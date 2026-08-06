@@ -21,7 +21,7 @@ module test;
 			.ui_in(ui_in), .uio_in(uio_in), .uio_out(uio_out), .uio_oe(uio_oe), .uo_out(uo_out));
 
 	initial begin
-		$dumpvars;
+//		$dumpvars;
 		#30000000;
 		$finish;
 	end

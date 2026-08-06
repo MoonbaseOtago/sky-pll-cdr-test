@@ -1,0 +1,2 @@
+iverilog -DSYS_TEST -DGL_TEST -DGATE_TEST -o test test.v  ../test/cdr_cp_vco.bb.v  ../macros/cdrsup/cdrs.v  ../macros/deskew/deskew.v  ../test/pll2.bb.v ../runs/wokwi/final/nl/tt_um_quick_bus.nl.v /usr/local/share/pdk/sky130A/libs.ref/sky130_fd_sc_hd/verilog/sky130_fd_sc_hd.v /usr/local/share/pdk/sky130A/libs.ref/sky130_fd_sc_hd/verilog/primitives.v
+

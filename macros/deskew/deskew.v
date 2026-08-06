@@ -11,6 +11,7 @@
 //`define GL_TEST
 `ifdef SYS_TEST
 
+`ifndef GATE_TEST
 module sky130_fd_sc_hd__buf_1(input A, output X);
 
 	reg x;
@@ -27,6 +28,34 @@ module sky130_fd_sc_hd__a22oi_1(input A1, input A2, input B1, input B2, output Y
 		y <= #0.05 ~((A1&A2)|(B1&B2));
 
 endmodule
+`else
+module XXsky130_fd_sc_hd__buf_1(
+`ifdef GL_TEST
+            inout VPWR, inout VGND,
+            inout VPB, inout VNB,
+`endif
+		input A, output X);
+
+	reg x;
+	assign X=x;
+	always @(*)
+		x <= #0.04 A;
+
+endmodule
+module XXsky130_fd_sc_hd__a22oi_1(
+`ifdef GL_TEST
+            inout VPWR, inout VGND,
+            inout VPB, inout VNB,
+`endif
+	input A1, input A2, input B1, input B2, output Y);
+
+	reg y;
+	assign Y=y;
+	always @(*)
+		y <= #0.05 ~((A1&A2)|(B1&B2));
+
+endmodule
+`endif
 `endif
 `timescale 1ns/1ps
 module del1(
@@ -34,6 +63,56 @@ module del1(
             inout VPWR, inout VGND,
 `endif
 			input DIN, output DOUT, output OUT, input d);
+`ifdef GATE_TEST
+	wire dd0, dd1, dd2, dd3, dd4, dd5, dd6 ;
+	(* dont_touch = "yes" *) (* keep *) XXsky130_fd_sc_hd__buf_1 b00(
+`ifdef GL_TEST
+            .VPWR(VPWR), .VGND(VGND), .VPB(VPWR), .VNB(VGND),
+`endif
+				.A(DIN), .X(dd0));
+	(* dont_touch = "yes" *) (* keep *) XXsky130_fd_sc_hd__buf_1 b01(
+`ifdef GL_TEST
+            .VPWR(VPWR), .VGND(VGND), .VPB(VPWR), .VNB(VGND),
+`endif
+				.A(dd0), .X(dd1));
+	(* dont_touch = "yes" *) (* keep *) XXsky130_fd_sc_hd__buf_1 b10(
+`ifdef GL_TEST
+            .VPWR(VPWR), .VGND(VGND), .VPB(VPWR), .VNB(VGND),
+`endif
+				.A(dd1), .X(dd2));
+	(* dont_touch = "yes" *) (* keep *) XXsky130_fd_sc_hd__buf_1 b11(
+`ifdef GL_TEST
+            .VPWR(VPWR), .VGND(VGND), .VPB(VPWR), .VNB(VGND),
+`endif
+				.A(dd2), .X(dd3));
+	(* dont_touch = "yes" *) (* keep *) XXsky130_fd_sc_hd__buf_1 b20(
+`ifdef GL_TEST
+            .VPWR(VPWR), .VGND(VGND), .VPB(VPWR), .VNB(VGND),
+`endif
+				.A(dd3), .X(dd4));
+	(* dont_touch = "yes" *) (* keep *) XXsky130_fd_sc_hd__buf_1 b21(
+`ifdef GL_TEST
+            .VPWR(VPWR), .VGND(VGND), .VPB(VPWR), .VNB(VGND),
+`endif
+				.A(dd4), .X(dd5));
+	(* dont_touch = "yes" *) (* keep *) XXsky130_fd_sc_hd__buf_1 b30(
+`ifdef GL_TEST
+            .VPWR(VPWR), .VGND(VGND), .VPB(VPWR), .VNB(VGND),
+`endif
+				.A(dd5), .X(dd6));
+	(* dont_touch = "yes" *) (* keep *) XXsky130_fd_sc_hd__buf_1 b31(
+`ifdef GL_TEST
+            .VPWR(VPWR), .VGND(VGND), .VPB(VPWR), .VNB(VGND),
+`endif
+				.A(dd6), .X(OUT));
+	(* dont_touch = "yes" *) (* keep *) XXsky130_fd_sc_hd__a22oi_1 sw(
+`ifdef GL_TEST
+            .VPWR(VPWR), .VGND(VGND), .VPB(VPWR), .VNB(VGND),
+`endif
+				.A1(d), .A2(OUT), .B1(dd3), .B2(~d), .Y(DOUT));
+
+`else
+
 
 	wire dd0, dd1, dd2, dd3, dd4, dd5, dd6 ;
 	(* dont_touch = "yes" *) (* keep *) sky130_fd_sc_hd__buf_1 b00(
@@ -81,6 +160,7 @@ module del1(
             .VPWR(VPWR), .VGND(VGND), .VPB(VPWR), .VNB(VGND),
 `endif
 				.A1(d), .A2(OUT), .B1(dd3), .B2(~d), .Y(DOUT));
+`endif
 endmodule
 module del2(
 `ifdef GL_TEST
@@ -99,11 +179,19 @@ module del2(
             .VPWR(VPWR), .VGND(VGND),
 `endif
 		.DIN(o), .DOUT(dd1), .d(d[0]),.OUT(OUT));
+`ifdef GATE_TEST
+	(* dont_touch = "yes" *) (* keep *) XXsky130_fd_sc_hd__a22oi_1 sw(
+`ifdef GL_TEST
+            .VPWR(VPWR), .VGND(VGND), .VPB(VPWR), .VNB(VGND),
+`endif
+				.A1(d[1]), .A2(dd1), .B1(dd0), .B2(~d[1]), .Y(DOUT));
+`else
 	(* dont_touch = "yes" *) (* keep *) sky130_fd_sc_hd__a22oi_1 sw(
 `ifdef GL_TEST
             .VPWR(VPWR), .VGND(VGND), .VPB(VPWR), .VNB(VGND),
 `endif
 				.A1(d[1]), .A2(dd1), .B1(dd0), .B2(~d[1]), .Y(DOUT));
+`endif
 endmodule
 module del3(
 `ifdef GL_TEST
@@ -122,11 +210,19 @@ module del3(
             .VPWR(VPWR), .VGND(VGND),
 `endif
 		.DIN(o), .DOUT(dd1), .d(d[1:0]),.OUT(OUT));
+`ifdef GATE_TEST
+	(* dont_touch = "yes" *) (* keep *) XXsky130_fd_sc_hd__a22oi_1 sw(
+`ifdef GL_TEST
+            .VPWR(VPWR), .VGND(VGND), .VPB(VPWR), .VNB(VGND),
+`endif
+				.A1(d[2]), .A2(dd1), .B1(dd0), .B2(~d[2]), .Y(DOUT));
+`else
 	(* dont_touch = "yes" *) (* keep *) sky130_fd_sc_hd__a22oi_1 sw(
 `ifdef GL_TEST
             .VPWR(VPWR), .VGND(VGND), .VPB(VPWR), .VNB(VGND),
 `endif
 				.A1(d[2]), .A2(dd1), .B1(dd0), .B2(~d[2]), .Y(DOUT));
+`endif
 endmodule
 module del4(
 `ifdef GL_TEST
@@ -145,11 +241,19 @@ module del4(
             .VPWR(VPWR), .VGND(VGND),
 `endif
 		.DIN(o), .DOUT(dd1), .d(d[2:0]),.OUT(OUT));
+`ifdef GATE_TEST
+	(* dont_touch = "yes" *) (* keep *) XXsky130_fd_sc_hd__a22oi_1 sw(
+`ifdef GL_TEST
+            .VPWR(VPWR), .VGND(VGND), .VPB(VPWR), .VNB(VGND),
+`endif
+				.A1(d[3]), .A2(dd1), .B1(dd0), .B2(~d[3]), .Y(DOUT));
+`else
 	(* dont_touch = "yes" *) (* keep *) sky130_fd_sc_hd__a22oi_1 sw(
 `ifdef GL_TEST
             .VPWR(VPWR), .VGND(VGND), .VPB(VPWR), .VNB(VGND),
 `endif
 				.A1(d[3]), .A2(dd1), .B1(dd0), .B2(~d[3]), .Y(DOUT));
+`endif
 endmodule
 module variable_delay(
 `ifdef GL_TEST
@@ -170,11 +274,19 @@ module variable_delay(
             .VPWR(VPWR), .VGND(VGND),
 `endif
 		.DIN(o), .DOUT(dd1), .d(d[3:0]), .OUT(o2));
+`ifdef GATE_TEST
+	(* dont_touch = "yes" *) (* keep *) XXsky130_fd_sc_hd__a22oi_1 sw(
+`ifdef GL_TEST
+            .VPWR(VPWR), .VGND(VGND), .VPB(VPWR), .VNB(VGND),
+`endif
+				.A1(d[4]), .A2(dd1), .B1(dd0), .B2(~d[4]), .Y(dd2));
+`else
 	(* dont_touch = "yes" *) (* keep *) sky130_fd_sc_hd__a22oi_1 sw(
 `ifdef GL_TEST
             .VPWR(VPWR), .VGND(VGND), .VPB(VPWR), .VNB(VGND),
 `endif
 				.A1(d[4]), .A2(dd1), .B1(dd0), .B2(~d[4]), .Y(dd2));
+`endif
 	assign DOUT = ~dd2;
 endmodule
 

@@ -56,6 +56,9 @@ module down_registers(input reset_n, input clk10,
 			//		any k symbol received other than these 3 is an error
 			//
 			//
+			//	Here's a first hack at a device access protocol built on top of the QB data channel
+			//	it will change, it's just what's implemented here
+			//
 			//		Downstream messages
 			//
 			//		commands:
@@ -104,6 +107,8 @@ module down_registers(input reset_n, input clk10,
 			//
 			//		start and end symbols are optional unless you are using 'terminated by end symbol'
 			//		or you have an error condition'
+			//
+			//		On systems with multidrop each message must be terminated with an end symbol
 			//
 			//		Upstream messages:
 			//
